@@ -1,8 +1,12 @@
 <?php
 require_once '../../includes/config.php';
 
+// Iniciar el log
+error_log("=== Inicio del proceso de login ===");
+
 // Si el usuario ya está autenticado, redirigir al dashboard
 if (isAuthenticated()) {
+    error_log("Usuario ya autenticado, redirigiendo a dashboard");
     redirect('templates/dashboard.php');
 }
 
@@ -10,16 +14,21 @@ $error = '';
 
 // Procesar formulario de login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    error_log("Método POST detectado");
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
+
+    error_log("Datos recibidos - Usuario: " . $username);
 
     try {
         // Validar campos
         if (empty($username) || empty($password)) {
+            error_log("Error: Campos vacíos");
             throw new Exception('Por favor ingrese usuario y contraseña');
         }
 
         // Buscar usuario
+        error_log("Buscando usuario en la base de datos");
         $stmt = $db->prepare("
             SELECT u.*, w.name as workshop_name, w.status as workshop_status
             FROM users u
@@ -30,18 +39,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if (!$user) {
+            error_log("Error: Usuario no encontrado o inactivo");
             throw new Exception('Usuario o contraseña incorrectos');
         }
 
+        error_log("Usuario encontrado: " . $user['username']);
+
         // Verificar contraseña
         if (!password_verify($password, $user['password'])) {
+            error_log("Error: Contraseña incorrecta");
             throw new Exception('Usuario o contraseña incorrectos');
         }
 
         // Verificar estado del taller
         if ($user['workshop_status'] !== 'active') {
+            error_log("Error: Taller inactivo");
             throw new Exception('El taller se encuentra inactivo. Por favor contacte al administrador.');
         }
+
+        error_log("Iniciando sesión para el usuario: " . $user['username']);
 
         // Iniciar sesión
         $_SESSION['id_user'] = $user['id_user'];
@@ -53,13 +69,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['workshop_name'] = $user['workshop_name'];
 
         // Actualizar último login
+        error_log("Actualizando último login");
         $stmt = $db->prepare("UPDATE users SET last_login = NOW() WHERE id_user = ?");
         $stmt->execute([$user['id_user']]);
 
+        error_log("Redirigiendo al dashboard");
         // Redirigir al dashboard
         redirect('templates/dashboard.php');
 
     } catch (Exception $e) {
+        error_log("Error en el proceso de login: " . $e->getMessage());
         $error = $e->getMessage();
     }
 }
