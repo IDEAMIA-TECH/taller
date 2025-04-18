@@ -2,7 +2,7 @@
 RewriteEngine On
 
 # Establecer el directorio base
-RewriteBase /
+RewriteBase /taller/
 
 # Proteger archivos y directorios sensibles
 <FilesMatch "^\.">
@@ -11,7 +11,7 @@ RewriteBase /
 </FilesMatch>
 
 # Proteger archivos de configuración
-<FilesMatch "^(config\.php|\.htaccess)$">
+<FilesMatch "^(config\.php|database\.php|database_config\.php|\.htaccess)$">
     Order allow,deny
     Deny from all
 </FilesMatch>
@@ -35,20 +35,20 @@ Options -Indexes
     ExpiresByType application/javascript "access plus 1 month"
 </IfModule>
 
-# Redireccionar a HTTPS (descomentar en producción)
-# RewriteCond %{HTTPS} off
-# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# Forzar HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Manejar errores
-ErrorDocument 403 /templates/error.php?code=403
-ErrorDocument 404 /templates/error.php?code=404
-ErrorDocument 500 /templates/error.php?code=500
+ErrorDocument 403 /taller/templates/error.php?code=403
+ErrorDocument 404 /taller/templates/error.php?code=404
+ErrorDocument 500 /taller/templates/error.php?code=500
 
 # Reglas de reescritura para URLs amigables
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 
-# Módulos
+# Módulos principales
 RewriteRule ^clientes/?$ modules/clients/index.php [L]
 RewriteRule ^clientes/nuevo/?$ modules/clients/create.php [L]
 RewriteRule ^clientes/editar/([0-9]+)/?$ modules/clients/edit.php?id=$1 [L]
@@ -64,16 +64,34 @@ RewriteRule ^servicios/nuevo/?$ modules/services/create.php [L]
 RewriteRule ^servicios/editar/([0-9]+)/?$ modules/services/edit.php?id=$1 [L]
 RewriteRule ^servicios/ver/([0-9]+)/?$ modules/services/view.php?id=$1 [L]
 
-RewriteRule ^ordenes/?$ modules/services/orders.php [L]
-RewriteRule ^ordenes/nueva/?$ modules/services/order_create.php [L]
-RewriteRule ^ordenes/ver/([0-9]+)/?$ modules/services/order_details.php?id=$1 [L]
+RewriteRule ^ordenes/?$ modules/service_orders/index.php [L]
+RewriteRule ^ordenes/nueva/?$ modules/service_orders/create.php [L]
+RewriteRule ^ordenes/ver/([0-9]+)/?$ modules/service_orders/view.php?id=$1 [L]
+
+RewriteRule ^facturas/?$ modules/billing/invoices.php [L]
+RewriteRule ^facturas/nueva/?$ modules/billing/create.php [L]
+RewriteRule ^facturas/ver/([0-9]+)/?$ modules/billing/view.php?id=$1 [L]
 
 RewriteRule ^reportes/?$ modules/reports/index.php [L]
+RewriteRule ^reportes/inventario/?$ modules/reports/inventory.php [L]
+RewriteRule ^reportes/mantenimiento/?$ modules/reports/maintenance.php [L]
+
+# Módulo de administración
+RewriteRule ^admin/?$ modules/admin/index.php [L]
+RewriteRule ^admin/usuarios/?$ modules/admin/users.php [L]
+RewriteRule ^admin/configuracion/?$ modules/admin/settings.php [L]
+
+# Módulo de facturación
+RewriteRule ^facturacion/?$ modules/billing/index.php [L]
+RewriteRule ^facturacion/configuracion/?$ modules/billing/fiscal_settings.php [L]
 
 # Páginas principales
 RewriteRule ^login/?$ templates/login.php [L]
 RewriteRule ^dashboard/?$ templates/dashboard.php [L]
 RewriteRule ^error/?$ templates/error.php [L]
+
+# API
+RewriteRule ^api/v1/(.*)$ api/v1/index.php?endpoint=$1 [QSA,L]
 
 # Si no coincide ninguna regla anterior, redirigir al dashboard
 RewriteRule ^.*$ templates/dashboard.php [L] 

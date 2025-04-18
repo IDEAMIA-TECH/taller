@@ -8,12 +8,23 @@ define('DB_NAME', 'ideamiadev_taller');
 // Configuración de la aplicación
 define('APP_NAME', 'Sistema de Gestión para Taller Mecánico');
 define('APP_VERSION', '1.0.0');
-define('APP_URL', 'http://localhost/taller');
+define('APP_URL', 'https://ideamia-dev.com/taller');
 define('APP_PATH', dirname(__DIR__));
+
+// Configuración de rutas
+define('ASSETS_URL', APP_URL . '/assets');
+define('UPLOADS_URL', APP_URL . '/uploads');
+define('INVOICES_URL', APP_URL . '/storage/invoices');
+
+// Configuración de directorios
+define('ASSETS_PATH', APP_PATH . '/assets');
+define('UPLOADS_PATH', APP_PATH . '/uploads');
+define('INVOICES_PATH', APP_PATH . '/storage/invoices');
 
 // Configuración de sesión
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
+ini_set('session.cookie_secure', 1); // Solo para HTTPS
 session_start();
 
 // Conexión a la base de datos usando la clase Database
@@ -138,5 +149,31 @@ function getCurrentWorkshopName() {
     );
     
     return $result ? $result['name'] : null;
+}
+
+// Función para obtener la URL completa de un recurso
+function asset($path) {
+    return ASSETS_URL . '/' . ltrim($path, '/');
+}
+
+// Función para obtener la URL completa de un archivo subido
+function upload($path) {
+    return UPLOADS_URL . '/' . ltrim($path, '/');
+}
+
+// Función para obtener la URL completa de una factura
+function invoice($path) {
+    return INVOICES_URL . '/' . ltrim($path, '/');
+}
+
+// Función para obtener la ruta física de un archivo
+function storage_path($path) {
+    return APP_PATH . '/storage/' . ltrim($path, '/');
+}
+
+// Función para verificar si el sitio está en HTTPS
+function isSecure() {
+    return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') 
+        || $_SERVER['SERVER_PORT'] == 443;
 }
 ?>
