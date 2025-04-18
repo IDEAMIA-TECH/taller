@@ -4,6 +4,8 @@ require_once '../../includes/config.php';
 // Array para almacenar los logs
 $logs = [];
 $logs[] = "=== Inicio del proceso de login ===";
+$logs[] = "URL actual: " . $_SERVER['REQUEST_URI'];
+$logs[] = "Método de solicitud: " . $_SERVER['REQUEST_METHOD'];
 
 // Si el usuario ya está autenticado, redirigir al dashboard
 if (isAuthenticated()) {
@@ -20,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     $logs[] = "Datos recibidos - Usuario: " . $username;
+    $logs[] = "Datos recibidos - Contraseña: " . (!empty($password) ? "***" : "vacía");
 
     try {
         // Validar campos
@@ -115,7 +118,7 @@ include '../../includes/header.php';
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Ingresar</button>
+                            <button type="submit" class="btn btn-primary" id="loginButton">Ingresar</button>
                         </div>
                     </form>
 
@@ -137,11 +140,26 @@ logs.forEach(log => {
     console.log('%cLogin Debug:', 'color: #4CAF50; font-weight: bold;', log);
 });
 
-// Agregar listener al formulario para mostrar logs en tiempo real
+// Agregar listener al formulario
 document.getElementById('loginForm').addEventListener('submit', function(e) {
-    console.log('%cFormulario enviado:', 'color: #2196F3; font-weight: bold;');
-    console.log('Usuario:', document.getElementById('username').value);
-    console.log('Contraseña:', document.getElementById('password').value);
+    console.log('Formulario enviado');
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (!username || !password) {
+        console.error('Error: Campos vacíos');
+        e.preventDefault();
+        return;
+    }
+    
+    console.log('Enviando formulario...');
+});
+
+// Agregar listener al botón
+document.getElementById('loginButton').addEventListener('click', function(e) {
+    console.log('Botón clickeado');
+    const form = document.getElementById('loginForm');
+    form.submit();
 });
 </script>
 
