@@ -44,6 +44,9 @@ ErrorDocument 403 /taller/templates/error.php?code=403
 ErrorDocument 404 /taller/templates/error.php?code=404
 ErrorDocument 500 /taller/templates/error.php?code=500
 
+# Permitir acceso directo a index.php
+RewriteRule ^$ index.php [L]
+
 # Reglas de reescritura para URLs amigables
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
@@ -93,5 +96,13 @@ RewriteRule ^error/?$ templates/error.php [L]
 # API
 RewriteRule ^api/v1/(.*)$ api/v1/index.php?endpoint=$1 [QSA,L]
 
-# Si no coincide ninguna regla anterior, redirigir al dashboard
+# Si no coincide ninguna regla anterior, redirigir al dashboard solo si está autenticado
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/taller/login
+RewriteCond %{REQUEST_URI} !^/taller/index.php
+RewriteCond %{REQUEST_URI} !^/taller/register
+RewriteCond %{REQUEST_URI} !^/taller/contact.php
+RewriteCond %{REQUEST_URI} !^/taller/assets
+RewriteCond %{REQUEST_URI} !^/taller/api
 RewriteRule ^.*$ templates/dashboard.php [L] 

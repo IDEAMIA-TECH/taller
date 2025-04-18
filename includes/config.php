@@ -6,10 +6,9 @@ define('DB_PASS', 'j5?rAqQ5D#zy3Y76');
 define('DB_NAME', 'ideamiadev_taller');
 
 // Configuración de la aplicación
-define('APP_NAME', 'Sistema de Gestión para Taller Mecánico');
-define('APP_VERSION', '1.0.0');
+define('APP_NAME', 'TallerPro');
 define('APP_URL', 'https://ideamia-dev.com/taller');
-define('APP_PATH', dirname(__DIR__));
+define('APP_VERSION', '1.0.0');
 
 // Configuración de rutas
 define('ASSETS_URL', APP_URL . '/assets');
@@ -17,19 +16,129 @@ define('UPLOADS_URL', APP_URL . '/uploads');
 define('INVOICES_URL', APP_URL . '/storage/invoices');
 
 // Configuración de directorios
-define('ASSETS_PATH', APP_PATH . '/assets');
-define('UPLOADS_PATH', APP_PATH . '/uploads');
-define('INVOICES_PATH', APP_PATH . '/storage/invoices');
+define('ASSETS_PATH', APP_URL . '/assets');
+define('UPLOADS_PATH', APP_URL . '/uploads');
+define('INVOICES_PATH', APP_URL . '/storage/invoices');
 
 // Configuración de sesión
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
-ini_set('session.cookie_secure', 1); // Solo para HTTPS
+ini_set('session.cookie_secure', 1);
 session_start();
 
-// Conexión a la base de datos usando la clase Database
+// Inicializar la conexión a la base de datos
 require_once __DIR__ . '/database.php';
 $db = Database::getInstance();
+
+// Funciones de utilidad
+function isLoggedIn() {
+    return isset($_SESSION['user_id']);
+}
+
+function requireLogin() {
+    if (!isLoggedIn()) {
+        header('Location: ' . APP_URL . '/login');
+        exit;
+    }
+}
+
+function hasRole($role) {
+    return isset($_SESSION['role']) && $_SESSION['role'] === $role;
+}
+
+function requireRole($role) {
+    if (!hasRole($role)) {
+        header('Location: ' . APP_URL . '/error?code=403');
+        exit;
+    }
+}
+
+function redirect($url) {
+    header('Location: ' . APP_URL . '/' . $url);
+    exit;
+}
+
+function sanitize($input) {
+    return htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
+}
+
+function setMessage($type, $message) {
+    $_SESSION['message'] = [
+        'type' => $type,
+        'text' => $message
+    ];
+}
+
+function getMessage() {
+    if (isset($_SESSION['message'])) {
+        $message = $_SESSION['message'];
+        unset($_SESSION['message']);
+        return $message;
+    }
+    return null;
+}
+
+function getCurrentWorkshop() {
+    if (isset($_SESSION['workshop_id'])) {
+        $db = Database::getInstance();
+        return $db->fetch(
+            "SELECT * FROM workshops WHERE id_workshop = ?",
+            [$_SESSION['workshop_id']]
+        );
+    }
+    return null;
+}
+
+function getCurrentUser() {
+    if (isset($_SESSION['user_id'])) {
+        $db = Database::getInstance();
+        return $db->fetch(
+            "SELECT * FROM users WHERE id_user = ?",
+            [$_SESSION['user_id']]
+        );
+    }
+    return null;
+}
+
+function isWorkshopActive() {
+    $workshop = getCurrentWorkshop();
+    return $workshop && $workshop['subscription_status'] === 'active';
+}
+
+function getResourcePath($type) {
+    switch ($type) {
+        case 'assets':
+            return APP_URL . '/assets';
+        case 'uploads':
+            return APP_URL . '/uploads';
+        case 'invoices':
+            return APP_URL . '/invoices';
+        default:
+            return APP_URL;
+    }
+}
+
+function getPhysicalPath($type) {
+    switch ($type) {
+        case 'assets':
+            return __DIR__ . '/../assets';
+        case 'uploads':
+            return __DIR__ . '/../uploads';
+        case 'invoices':
+            return __DIR__ . '/../invoices';
+        default:
+            return __DIR__ . '/..';
+    }
+}
+
+// Verificar si la solicitud es para una página pública
+$public_pages = ['index.php', 'login.php', 'register.php', 'contact.php'];
+$current_page = basename($_SERVER['PHP_SELF']);
+
+// Solo redirigir a login si no está en una página pública y no está autenticado
+if (!in_array($current_page, $public_pages) && !isLoggedIn()) {
+    requireLogin();
+}
 
 // Función para verificar si el usuario está autenticado
 function isAuthenticated() {
@@ -42,80 +151,6 @@ function checkRole($requiredRole) {
         return false;
     }
     return $_SESSION['user_role'] === $requiredRole;
-}
-
-// Función para redireccionar
-function redirect($path) {
-    header("Location: " . APP_URL . "/" . $path);
-    exit();
-}
-
-// Función para sanitizar entrada
-function sanitize($input) {
-    return htmlspecialchars(strip_tags(trim($input)), ENT_QUOTES, 'UTF-8');
-}
-
-// Función para mostrar mensajes de error
-function showError($message) {
-    $_SESSION['error'] = $message;
-}
-
-// Función para mostrar mensajes de éxito
-function showSuccess($message) {
-    $_SESSION['success'] = $message;
-}
-
-// Función para obtener el taller actual
-function getCurrentWorkshop() {
-    if (isset($_SESSION['workshop_id'])) {
-        return $_SESSION['workshop_id'];
-    }
-    return null;
-}
-
-// Función para verificar si el taller está activo
-function isWorkshopActive() {
-    global $db;
-    $workshopId = getCurrentWorkshop();
-    
-    if (!$workshopId) {
-        return false;
-    }
-    
-    $result = $db->fetch(
-        "SELECT subscription_status FROM workshops WHERE id_workshop = ?",
-        [$workshopId]
-    );
-    
-    return $result && $result['subscription_status'] === 'active';
-}
-
-// Función para verificar permisos
-function hasPermission($permission) {
-    if (!isAuthenticated()) {
-        return false;
-    }
-    
-    global $db;
-    $userId = $_SESSION['user_id'];
-    
-    $result = $db->fetch(
-        "SELECT role FROM users WHERE id_user = ?",
-        [$userId]
-    );
-    
-    if (!$result) {
-        return false;
-    }
-    
-    // Mapeo de roles a permisos
-    $rolePermissions = [
-        'admin' => ['admin', 'receptionist', 'mechanic'],
-        'receptionist' => ['receptionist'],
-        'mechanic' => ['mechanic']
-    ];
-    
-    return in_array($permission, $rolePermissions[$result['role']] ?? []);
 }
 
 // Función para obtener el nombre del usuario actual
