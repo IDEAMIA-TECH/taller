@@ -72,7 +72,7 @@ require_once 'includes/config.php';
                         <a class="nav-link" href="#contacto">Contacto</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link btn btn-primary text-white ms-2" href="<?php echo APP_URL; ?>/login">
+                        <a class="nav-link btn btn-primary text-white ms-2" href="<?php echo APP_URL; ?>/modules/auth/login">
                             <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
                         </a>
                     </li>
