@@ -1,12 +1,13 @@
 <?php
 require_once '../../includes/config.php';
 
-// Iniciar el log
-error_log("=== Inicio del proceso de login ===");
+// Array para almacenar los logs
+$logs = [];
+$logs[] = "=== Inicio del proceso de login ===";
 
 // Si el usuario ya está autenticado, redirigir al dashboard
 if (isAuthenticated()) {
-    error_log("Usuario ya autenticado, redirigiendo a dashboard");
+    $logs[] = "Usuario ya autenticado, redirigiendo a dashboard";
     redirect('templates/dashboard.php');
 }
 
@@ -14,21 +15,21 @@ $error = '';
 
 // Procesar formulario de login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    error_log("Método POST detectado");
+    $logs[] = "Método POST detectado";
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    error_log("Datos recibidos - Usuario: " . $username);
+    $logs[] = "Datos recibidos - Usuario: " . $username;
 
     try {
         // Validar campos
         if (empty($username) || empty($password)) {
-            error_log("Error: Campos vacíos");
+            $logs[] = "Error: Campos vacíos";
             throw new Exception('Por favor ingrese usuario y contraseña');
         }
 
         // Buscar usuario
-        error_log("Buscando usuario en la base de datos");
+        $logs[] = "Buscando usuario en la base de datos";
         $stmt = $db->prepare("
             SELECT u.*, w.name as workshop_name, w.status as workshop_status
             FROM users u
@@ -39,25 +40,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if (!$user) {
-            error_log("Error: Usuario no encontrado o inactivo");
+            $logs[] = "Error: Usuario no encontrado o inactivo";
             throw new Exception('Usuario o contraseña incorrectos');
         }
 
-        error_log("Usuario encontrado: " . $user['username']);
+        $logs[] = "Usuario encontrado: " . $user['username'];
 
         // Verificar contraseña
         if (!password_verify($password, $user['password'])) {
-            error_log("Error: Contraseña incorrecta");
+            $logs[] = "Error: Contraseña incorrecta";
             throw new Exception('Usuario o contraseña incorrectos');
         }
 
         // Verificar estado del taller
         if ($user['workshop_status'] !== 'active') {
-            error_log("Error: Taller inactivo");
+            $logs[] = "Error: Taller inactivo";
             throw new Exception('El taller se encuentra inactivo. Por favor contacte al administrador.');
         }
 
-        error_log("Iniciando sesión para el usuario: " . $user['username']);
+        $logs[] = "Iniciando sesión para el usuario: " . $user['username'];
 
         // Iniciar sesión
         $_SESSION['id_user'] = $user['id_user'];
@@ -69,16 +70,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['workshop_name'] = $user['workshop_name'];
 
         // Actualizar último login
-        error_log("Actualizando último login");
+        $logs[] = "Actualizando último login";
         $stmt = $db->prepare("UPDATE users SET last_login = NOW() WHERE id_user = ?");
         $stmt->execute([$user['id_user']]);
 
-        error_log("Redirigiendo al dashboard");
+        $logs[] = "Redirigiendo al dashboard";
         // Redirigir al dashboard
         redirect('templates/dashboard.php');
 
     } catch (Exception $e) {
-        error_log("Error en el proceso de login: " . $e->getMessage());
+        $logs[] = "Error en el proceso de login: " . $e->getMessage();
         $error = $e->getMessage();
     }
 }
@@ -101,7 +102,7 @@ include '../../includes/header.php';
                         <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                     <?php endif; ?>
 
-                    <form method="POST" action="">
+                    <form method="POST" action="" id="loginForm">
                         <div class="mb-3">
                             <label for="username" class="form-label">Usuario</label>
                             <input type="text" class="form-control" id="username" name="username" required 
@@ -126,5 +127,22 @@ include '../../includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+// Convertir el array de logs PHP a JavaScript
+const logs = <?php echo json_encode($logs); ?>;
+
+// Mostrar logs en la consola
+logs.forEach(log => {
+    console.log('%cLogin Debug:', 'color: #4CAF50; font-weight: bold;', log);
+});
+
+// Agregar listener al formulario para mostrar logs en tiempo real
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    console.log('%cFormulario enviado:', 'color: #2196F3; font-weight: bold;');
+    console.log('Usuario:', document.getElementById('username').value);
+    console.log('Contraseña:', document.getElementById('password').value);
+});
+</script>
 
 <?php include '../../includes/footer.php'; ?> 
