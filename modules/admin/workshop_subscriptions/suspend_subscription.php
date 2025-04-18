@@ -1,0 +1,85 @@
+<?php
+require_once '../../../includes/config.php';
+
+// Verificar autenticación y permisos de super administrador
+if (!isAuthenticated() || !isSuperAdmin()) {
+    redirect('templates/login.php');
+}
+
+// Verificar que sea una petición POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    redirect('list.php');
+}
+
+try {
+    // Obtener y validar datos
+    $id_subscription = (int)$_POST['id_subscription'];
+    $reason = $_POST['reason'] ?? 'Falta de pago';
+
+    // Validaciones básicas
+    if ($id_subscription <= 0) {
+        throw new Exception('ID de suscripción inválido');
+    }
+
+    // Obtener información de la suscripción
+    $stmt = $db->prepare("
+        SELECT ws.*, w.name as workshop_name
+        FROM workshop_subscriptions ws
+        JOIN workshops w ON ws.id_workshop = w.id_workshop
+        WHERE ws.id_subscription = ?
+    ");
+    $stmt->execute([$id_subscription]);
+    $subscription = $stmt->fetch();
+
+    if (!$subscription) {
+        throw new Exception('Suscripción no encontrada');
+    }
+
+    // Iniciar transacción
+    $db->beginTransaction();
+
+    // Actualizar estado de la suscripción
+    $stmt = $db->prepare("
+        UPDATE workshop_subscriptions 
+        SET status = 'suspended',
+            suspension_reason = ?
+        WHERE id_subscription = ?
+    ");
+    $stmt->execute([$reason, $id_subscription]);
+
+    // Actualizar estado del taller
+    $stmt = $db->prepare("
+        UPDATE workshops 
+        SET subscription_status = 'suspended'
+        WHERE id_workshop = ?
+    ");
+    $stmt->execute([$subscription['id_workshop']]);
+
+    // Crear notificación de suspensión
+    $stmt = $db->prepare("
+        INSERT INTO payment_notifications 
+        (id_workshop, notification_type, message, status)
+        VALUES (?, 'service_suspension', ?, 'sent')
+    ");
+    $stmt->execute([
+        $subscription['id_workshop'],
+        "Suscripción suspendida: $reason"
+    ]);
+
+    // Confirmar transacción
+    $db->commit();
+
+    // Redirigir con mensaje de éxito
+    $_SESSION['success_message'] = 'Suscripción suspendida exitosamente';
+    redirect('view_subscription.php?id=' . $id_subscription);
+
+} catch (Exception $e) {
+    // Revertir transacción en caso de error
+    if ($db->inTransaction()) {
+        $db->rollBack();
+    }
+
+    // Redirigir con mensaje de error
+    $_SESSION['error_message'] = 'Error al suspender la suscripción: ' . $e->getMessage();
+    redirect('view_subscription.php?id=' . $id_subscription);
+} 

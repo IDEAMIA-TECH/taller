@@ -1,0 +1,79 @@
+# Habilitar el motor de reescritura
+RewriteEngine On
+
+# Establecer el directorio base
+RewriteBase /
+
+# Proteger archivos y directorios sensibles
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Proteger archivos de configuración
+<FilesMatch "^(config\.php|\.htaccess)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevenir listado de directorios
+Options -Indexes
+
+# Comprimir archivos
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/x-javascript application/json
+</IfModule>
+
+# Caché del navegador
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
+
+# Redireccionar a HTTPS (descomentar en producción)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Manejar errores
+ErrorDocument 403 /templates/error.php?code=403
+ErrorDocument 404 /templates/error.php?code=404
+ErrorDocument 500 /templates/error.php?code=500
+
+# Reglas de reescritura para URLs amigables
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Módulos
+RewriteRule ^clientes/?$ modules/clients/index.php [L]
+RewriteRule ^clientes/nuevo/?$ modules/clients/create.php [L]
+RewriteRule ^clientes/editar/([0-9]+)/?$ modules/clients/edit.php?id=$1 [L]
+RewriteRule ^clientes/ver/([0-9]+)/?$ modules/clients/view.php?id=$1 [L]
+
+RewriteRule ^vehiculos/?$ modules/vehicles/index.php [L]
+RewriteRule ^vehiculos/nuevo/?$ modules/vehicles/create.php [L]
+RewriteRule ^vehiculos/editar/([0-9]+)/?$ modules/vehicles/edit.php?id=$1 [L]
+RewriteRule ^vehiculos/ver/([0-9]+)/?$ modules/vehicles/view.php?id=$1 [L]
+
+RewriteRule ^servicios/?$ modules/services/index.php [L]
+RewriteRule ^servicios/nuevo/?$ modules/services/create.php [L]
+RewriteRule ^servicios/editar/([0-9]+)/?$ modules/services/edit.php?id=$1 [L]
+RewriteRule ^servicios/ver/([0-9]+)/?$ modules/services/view.php?id=$1 [L]
+
+RewriteRule ^ordenes/?$ modules/services/orders.php [L]
+RewriteRule ^ordenes/nueva/?$ modules/services/order_create.php [L]
+RewriteRule ^ordenes/ver/([0-9]+)/?$ modules/services/order_details.php?id=$1 [L]
+
+RewriteRule ^reportes/?$ modules/reports/index.php [L]
+
+# Páginas principales
+RewriteRule ^login/?$ templates/login.php [L]
+RewriteRule ^dashboard/?$ templates/dashboard.php [L]
+RewriteRule ^error/?$ templates/error.php [L]
+
+# Si no coincide ninguna regla anterior, redirigir al dashboard
+RewriteRule ^.*$ templates/dashboard.php [L] 
