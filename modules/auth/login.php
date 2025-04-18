@@ -105,7 +105,7 @@ include '../../includes/header.php';
                         <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                     <?php endif; ?>
 
-                    <form method="POST" action="" id="loginForm">
+                    <form method="POST" action="" id="loginForm" onsubmit="return handleSubmit(event)">
                         <div class="mb-3">
                             <label for="username" class="form-label">Usuario</label>
                             <input type="text" class="form-control" id="username" name="username" required 
@@ -132,35 +132,35 @@ include '../../includes/header.php';
 </div>
 
 <script>
-// Convertir el array de logs PHP a JavaScript
-const logs = <?php echo json_encode($logs); ?>;
-
-// Mostrar logs en la consola
-logs.forEach(log => {
-    console.log('%cLogin Debug:', 'color: #4CAF50; font-weight: bold;', log);
-});
-
-// Agregar listener al formulario
-document.getElementById('loginForm').addEventListener('submit', function(e) {
+// Función para manejar el envío del formulario
+function handleSubmit(event) {
     console.log('Formulario enviado');
+    alert('Formulario enviado'); // Alerta para verificar que el JavaScript funciona
+    
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     
     if (!username || !password) {
         console.error('Error: Campos vacíos');
-        e.preventDefault();
-        return;
+        alert('Por favor complete todos los campos');
+        event.preventDefault();
+        return false;
     }
     
     console.log('Enviando formulario...');
-});
+    return true;
+}
 
 // Agregar listener al botón
 document.getElementById('loginButton').addEventListener('click', function(e) {
     console.log('Botón clickeado');
-    const form = document.getElementById('loginForm');
-    form.submit();
+    alert('Botón clickeado'); // Alerta para verificar que el JavaScript funciona
 });
+
+// Mostrar logs iniciales
+const logs = <?php echo json_encode($logs); ?>;
+console.log('Logs iniciales:', logs);
+alert('Script cargado'); // Alerta para verificar que el JavaScript se carga
 </script>
 
 <?php include '../../includes/footer.php'; ?> 
