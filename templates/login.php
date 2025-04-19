@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         
         $stmt = $pdo->prepare("
-            SELECT u.*, w.name as workshop_name, w.status as workshop_status
+            SELECT u.*, w.name as workshop_name, w.subscription_status as workshop_status
             FROM users u
             JOIN workshops w ON u.id_workshop = w.id_workshop
             WHERE u.username = ? AND u.status = 'active'
