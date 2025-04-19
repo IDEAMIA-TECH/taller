@@ -399,18 +399,26 @@ document.getElementById('zip_code').addEventListener('change', function() {
         this.parentNode.appendChild(loadingIndicator);
         
         // Hacer la llamada AJAX
+        console.log('Iniciando petición AJAX para código postal:', zipCode);
         fetch(`../../modules/clients/get_address.php?zip_code=${zipCode}`)
             .then(response => {
+                console.log('Respuesta recibida:', response);
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
                 return response.json();
             })
             .then(data => {
+                console.log('Datos recibidos:', data);
                 // Remover indicador de carga
                 this.parentNode.removeChild(loadingIndicator);
                 
                 if (data.success) {
+                    console.log('Actualizando campos con:', {
+                        state: data.state,
+                        city: data.city,
+                        neighborhoods: data.neighborhoods
+                    });
                     // Actualizar campos
                     document.getElementById('state').value = data.state;
                     document.getElementById('city').value = data.city;
@@ -425,12 +433,14 @@ document.getElementById('zip_code').addEventListener('change', function() {
                         option.textContent = neighborhood;
                         neighborhoodSelect.appendChild(option);
                     });
+                    console.log('Campos actualizados exitosamente');
                 } else {
+                    console.error('Error en la respuesta:', data.message);
                     alert('No se encontró información para este código postal');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Error en la petición:', error);
                 alert('Error al obtener la información del código postal');
             });
     }
