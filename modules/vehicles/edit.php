@@ -89,16 +89,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         try {
             $sql = "UPDATE vehicles 
-                    SET id_client = " . $db->quote($id_client) . ",
-                        brand = " . $db->quote($brand) . ",
-                        model = " . $db->quote($model) . ",
-                        year = " . $db->quote($year) . ",
-                        color = " . $db->quote($color) . ",
-                        plates = " . $db->quote($plates) . ",
-                        vin = " . $db->quote($vin) . ",
-                        last_mileage = " . ($last_mileage !== null ? $db->quote($last_mileage) : "NULL") . "
-                    WHERE id_vehicle = " . $db->quote($id) . " 
-                    AND id_workshop = " . $db->quote(getCurrentWorkshop());
+                    SET id_client = '" . addslashes($id_client) . "',
+                        brand = '" . addslashes($brand) . "',
+                        model = '" . addslashes($model) . "',
+                        year = '" . addslashes($year) . "',
+                        color = '" . addslashes($color) . "',
+                        plates = '" . addslashes($plates) . "',
+                        vin = '" . addslashes($vin) . "',
+                        last_mileage = " . ($last_mileage !== null ? "'" . addslashes($last_mileage) . "'" : "NULL") . "
+                    WHERE id_vehicle = '" . addslashes($id) . "' 
+                    AND id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
 
             $db->query($sql);
 
