@@ -20,57 +20,50 @@ $limit = 10;
 $offset = ($page - 1) * $limit;
 
 try {
+    // Obtener la instancia de PDO
+    $pdo = $db->getPdo();
+    
     // Construir la consulta base
     $query = "SELECT v.*, c.name as client_name 
               FROM vehicles v 
               JOIN clients c ON v.id_client = c.id_client 
-              WHERE v.id_workshop = ?";
-    $params = [getCurrentWorkshop()];
+              WHERE v.id_workshop = " . $pdo->quote(getCurrentWorkshop());
 
     // Agregar filtro por cliente si existe
     if ($client_id > 0) {
-        $query .= " AND v.id_client = ?";
-        $params[] = $client_id;
+        $query .= " AND v.id_client = " . $pdo->quote($client_id);
     }
 
     // Agregar búsqueda si existe
     if (!empty($search)) {
-        $query .= " AND (v.brand LIKE ? OR v.model LIKE ? OR v.plates LIKE ? OR c.name LIKE ?)";
-        $searchParam = "%$search%";
-        $params = array_merge($params, [$searchParam, $searchParam, $searchParam, $searchParam]);
+        $searchParam = $pdo->quote("%$search%");
+        $query .= " AND (v.brand LIKE $searchParam OR v.model LIKE $searchParam OR v.plates LIKE $searchParam OR c.name LIKE $searchParam)";
     }
 
     // Agregar orden y límite
-    $query .= " ORDER BY v.created_at DESC LIMIT ? OFFSET ?";
-    $params[] = $limit;
-    $params[] = $offset;
+    $query .= " ORDER BY v.created_at DESC LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
 
     // Obtener vehículos
-    $stmt = $db->prepare($query);
-    $stmt->execute($params);
-    $vehicles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $result = $db->query($query);
+    $vehicles = $result->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener total de registros para paginación
     $countQuery = "SELECT COUNT(*) as total 
                    FROM vehicles v 
                    JOIN clients c ON v.id_client = c.id_client 
-                   WHERE v.id_workshop = ?";
-    $countParams = [getCurrentWorkshop()];
+                   WHERE v.id_workshop = " . $pdo->quote(getCurrentWorkshop());
 
     if ($client_id > 0) {
-        $countQuery .= " AND v.id_client = ?";
-        $countParams[] = $client_id;
+        $countQuery .= " AND v.id_client = " . $pdo->quote($client_id);
     }
 
     if (!empty($search)) {
-        $countQuery .= " AND (v.brand LIKE ? OR v.model LIKE ? OR v.plates LIKE ? OR c.name LIKE ?)";
-        $searchParam = "%$search%";
-        $countParams = array_merge($countParams, [$searchParam, $searchParam, $searchParam, $searchParam]);
+        $searchParam = $pdo->quote("%$search%");
+        $countQuery .= " AND (v.brand LIKE $searchParam OR v.model LIKE $searchParam OR v.plates LIKE $searchParam OR c.name LIKE $searchParam)";
     }
 
-    $stmt = $db->prepare($countQuery);
-    $stmt->execute($countParams);
-    $totalVehicles = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $result = $db->query($countQuery);
+    $totalVehicles = $result->fetch(PDO::FETCH_ASSOC)['total'];
     $totalPages = ceil($totalVehicles / $limit);
 
 } catch (PDOException $e) {
