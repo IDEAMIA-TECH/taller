@@ -18,14 +18,18 @@ $zip_code = $_GET['zip_code'];
 $logs[] = "Código postal recibido: " . $zip_code;
 
 try {
-    // Usar la API de Sepomex
-    $url = "https://api-sepomex.hckdrk.mx/query/info_cp/{$zip_code}";
+    // Usar la API de México
+    $url = "https://api.correosdemexico.gob.mx/v1/codigo-postal/{$zip_code}";
     $logs[] = "URL de la API: " . $url;
     
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Accept: application/json',
+        'Content-Type: application/json'
+    ]);
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -38,22 +42,20 @@ try {
         $data = json_decode($response, true);
         $logs[] = "Datos decodificados: " . print_r($data, true);
         
-        if (empty($data)) {
+        if (empty($data) || !isset($data['estado'])) {
             $logs[] = "No se encontraron datos para el código postal";
             echo json_encode(['success' => false, 'message' => 'No se encontró información para este código postal', 'logs' => $logs]);
             exit;
         }
         
-        // Extraer la información del primer resultado
-        $firstResult = $data[0];
-        $state = $firstResult['estado'] ?? '';
-        $city = $firstResult['municipio'] ?? '';
+        // Extraer la información
+        $state = $data['estado'] ?? '';
+        $city = $data['municipio'] ?? '';
         $neighborhoods = [];
         
-        // Recolectar todas las colonias
-        foreach ($data as $result) {
-            if (isset($result['asentamiento'])) {
-                $neighborhoods[] = $result['asentamiento'];
+        if (isset($data['asentamientos']) && is_array($data['asentamientos'])) {
+            foreach ($data['asentamientos'] as $asentamiento) {
+                $neighborhoods[] = $asentamiento['nombre'];
             }
         }
         
