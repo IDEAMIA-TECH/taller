@@ -28,66 +28,43 @@ try {
 
 // Procesar el formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Obtener y validar datos
+    error_log("Procesando formulario de vehículo");
+    
+    // Obtener datos del formulario
     $id_client = isset($_POST['id_client']) ? (int)$_POST['id_client'] : 0;
-    $brand = trim($_POST['brand'] ?? '');
-    $model = trim($_POST['model'] ?? '');
-    $year = isset($_POST['year']) ? (int)$_POST['year'] : 0;
-    $color = trim($_POST['color'] ?? '');
-    $plates = trim($_POST['plates'] ?? '');
-    $vin = trim($_POST['vin'] ?? '');
-    $last_mileage = isset($_POST['last_mileage']) ? (int)$_POST['last_mileage'] : null;
+    $brand = trim($_POST['brand']);
+    $model = trim($_POST['model']);
+    $year = (int)$_POST['year'];
+    $color = trim($_POST['color']);
+    $plates = trim($_POST['plates']);
+    $vin = trim($_POST['vin']);
+    $last_mileage = (int)$_POST['last_mileage'];
 
-    // Validaciones
-    if ($id_client <= 0) {
-        $errors[] = 'Debe seleccionar un cliente';
-    }
-
-    if (empty($brand)) {
-        $errors[] = 'La marca es requerida';
-    }
-
-    if (empty($model)) {
-        $errors[] = 'El modelo es requerido';
-    }
-
-    if ($year < 1900 || $year > date('Y')) {
-        $errors[] = 'El año no es válido';
-    }
-
-    if (!empty($vin) && strlen($vin) != 17) {
-        $errors[] = 'El número de serie (VIN) debe tener 17 caracteres';
-    }
-
-    // Si no hay errores, guardar el vehículo
-    if (empty($errors)) {
+    // Validar datos
+    if (empty($brand) || empty($model) || empty($year) || empty($color)) {
+        error_log("Datos incompletos en el formulario");
+        showError('Por favor complete todos los campos requeridos');
+    } else {
         try {
-            $stmt = $db->prepare("INSERT INTO vehicles (id_client, id_workshop, brand, model, year, color, plates, vin, last_mileage) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([
-                $id_client,
-                getCurrentWorkshop(),
-                $brand,
-                $model,
-                $year,
-                $color,
-                $plates,
-                $vin,
-                $last_mileage
-            ]);
-
-            $success = true;
-            showSuccess('Vehículo agregado correctamente');
+            error_log("Preparando inserción de vehículo");
+            $sql = "INSERT INTO vehicles (id_client, id_workshop, brand, model, year, color, plates, vin, last_mileage) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
-            // Redirigir según el origen
-            if ($client_id) {
-                redirect('../clients/view.php?id=' . $client_id);
-            } else {
-                redirect('index.php');
-            }
-
+            error_log("SQL: " . $sql);
+            error_log("Parámetros: " . print_r([$id_client, getCurrentWorkshop(), $brand, $model, $year, $color, $plates, $vin, $last_mileage], true));
+            
+            $stmt = $db->query($sql, [$id_client, getCurrentWorkshop(), $brand, $model, $year, $color, $plates, $vin, $last_mileage]);
+            
+            error_log("Vehículo agregado correctamente");
+            $_SESSION['success_message'] = 'Vehículo agregado correctamente';
+            header('Location: index.php');
+            exit;
         } catch (PDOException $e) {
-            $errors[] = 'Error al guardar el vehículo. Por favor, intente más tarde.';
+            error_log("Error PDO al insertar vehículo: " . $e->getMessage());
+            showError('Error al guardar el vehículo: ' . $e->getMessage());
+        } catch (Exception $e) {
+            error_log("Error general al insertar vehículo: " . $e->getMessage());
+            showError('Error al procesar la solicitud');
         }
     }
 }

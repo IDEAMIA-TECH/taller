@@ -24,64 +24,113 @@ if ($id <= 0) {
 }
 
 try {
-    // Obtener datos del cliente
-    $stmt = $db->prepare("SELECT * FROM clients WHERE id_client = ? AND id_workshop = ?");
-    $stmt->execute([$id, getCurrentWorkshop()]);
-    $client = $stmt->fetch();
+    // Obtener información del cliente
+    error_log("Preparando consulta para obtener datos del cliente");
+    $sql = "SELECT * FROM clients WHERE id_client = ? AND id_workshop = ?";
+    error_log("SQL: " . $sql);
+    error_log("Parámetros: " . print_r([$id, getCurrentWorkshop()], true));
+    
+    $stmt = $db->query($sql, [$id, getCurrentWorkshop()]);
+    $client = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$client) {
+        error_log("Cliente no encontrado");
         showError('Cliente no encontrado');
         redirect('index.php');
     }
 
+    error_log("Cliente encontrado: " . print_r($client, true));
+
+    // Obtener códigos postales
+    error_log("Obteniendo códigos postales");
+    $zip_sql = "SELECT DISTINCT zip_code, state, city FROM zip_codes ORDER BY zip_code";
+    error_log("SQL códigos postales: " . $zip_sql);
+    $zip_stmt = $db->query($zip_sql);
+    $zip_codes = $zip_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    error_log("Códigos postales encontrados: " . print_r($zip_codes, true));
+
+    // Obtener colonias para el código postal del cliente
+    error_log("Obteniendo colonias para el código postal del cliente");
+    $neighborhood_sql = "SELECT n.* FROM neighborhoods n 
+                        JOIN zip_codes z ON n.id_zip_code = z.id_zip_code 
+                        WHERE z.zip_code = ?";
+    error_log("SQL colonias: " . $neighborhood_sql);
+    error_log("Parámetros: " . print_r([$client['zip_code']], true));
+    
+    $neighborhood_stmt = $db->query($neighborhood_sql, [$client['zip_code']]);
+    $neighborhoods = $neighborhood_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    error_log("Colonias encontradas: " . print_r($neighborhoods, true));
+
 } catch (PDOException $e) {
-    showError('Error al cargar el cliente');
+    error_log("Error PDO: " . $e->getMessage());
+    showError('Error al obtener la información del cliente');
+    redirect('index.php');
+} catch (Exception $e) {
+    error_log("Error general: " . $e->getMessage());
+    showError('Error al procesar la solicitud');
     redirect('index.php');
 }
 
 // Procesar el formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Obtener y validar datos
-    $name = trim($_POST['name'] ?? '');
-    $phone = trim($_POST['phone'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $address = trim($_POST['address'] ?? '');
-    $rfc = trim($_POST['rfc'] ?? '');
+    error_log("Procesando formulario de edición de cliente");
+    
+    // Obtener datos del formulario
+    $name = trim($_POST['name']);
+    $phone = trim($_POST['phone']);
+    $email = trim($_POST['email']);
+    $rfc = trim($_POST['rfc']);
+    $street = trim($_POST['street']);
+    $number = trim($_POST['number']);
+    $number_int = trim($_POST['number_int']);
+    $neighborhood = trim($_POST['neighborhood']);
+    $city = trim($_POST['city']);
+    $state = trim($_POST['state']);
+    $zip_code = trim($_POST['zip_code']);
+    $reference = trim($_POST['reference']);
 
-    // Validaciones
-    if (empty($name)) {
-        $errors[] = 'El nombre es requerido';
-    }
-
-    if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'El correo electrónico no es válido';
-    }
-
-    if (!empty($rfc) && !preg_match('/^[A-Z&Ñ]{3,4}[0-9]{2}(0[1-9]|1[0-2])(0[1-9]|1[0-9]|2[0-9]|3[0-1])[A-Z0-9]{2}[0-9A]$/', $rfc)) {
-        $errors[] = 'El RFC no es válido';
-    }
-
-    // Si no hay errores, actualizar el cliente
-    if (empty($errors)) {
+    // Validar datos
+    if (empty($name) || empty($street) || empty($number) || empty($neighborhood) || 
+        empty($city) || empty($state) || empty($zip_code)) {
+        error_log("Datos incompletos en el formulario");
+        showError('Por favor complete todos los campos requeridos');
+    } else {
         try {
-            $stmt = $db->prepare("UPDATE clients 
-                                SET name = ?, phone = ?, email = ?, address = ?, rfc = ? 
-                                WHERE id_client = ? AND id_workshop = ?");
-            $stmt->execute([
-                $name,
-                $phone,
-                $email,
-                $address,
-                $rfc,
-                $id,
-                getCurrentWorkshop()
-            ]);
-
-            showSuccess('Cliente actualizado correctamente');
-            redirect('index.php');
-
+            error_log("Preparando actualización de cliente");
+            $sql = "UPDATE clients SET 
+                    name = ?, 
+                    phone = ?, 
+                    email = ?, 
+                    rfc = ?, 
+                    street = ?, 
+                    number = ?, 
+                    number_int = ?, 
+                    neighborhood = ?, 
+                    city = ?, 
+                    state = ?, 
+                    zip_code = ?, 
+                    reference = ? 
+                    WHERE id_client = ? AND id_workshop = ?";
+            
+            error_log("SQL: " . $sql);
+            error_log("Parámetros: " . print_r([$name, $phone, $email, $rfc, $street, $number, $number_int, 
+                $neighborhood, $city, $state, $zip_code, $reference, $id, getCurrentWorkshop()], true));
+            
+            $stmt = $db->query($sql, [$name, $phone, $email, $rfc, $street, $number, $number_int, 
+                $neighborhood, $city, $state, $zip_code, $reference, $id, getCurrentWorkshop()]);
+            
+            error_log("Cliente actualizado correctamente");
+            $_SESSION['success_message'] = 'Cliente actualizado correctamente';
+            header('Location: view.php?id=' . $id);
+            exit;
         } catch (PDOException $e) {
-            $errors[] = 'Error al actualizar el cliente. Por favor, intente más tarde.';
+            error_log("Error PDO al actualizar cliente: " . $e->getMessage());
+            showError('Error al actualizar el cliente: ' . $e->getMessage());
+        } catch (Exception $e) {
+            error_log("Error general al actualizar cliente: " . $e->getMessage());
+            showError('Error al procesar la solicitud');
         }
     }
 }
