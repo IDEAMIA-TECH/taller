@@ -36,35 +36,29 @@ try {
               JOIN clients c ON so.id_client = c.id_client
               JOIN vehicles v ON so.id_vehicle = v.id_vehicle
               LEFT JOIN users u ON so.id_user_assigned = u.id_user
-              WHERE so.id_workshop = ?";
-    $params = [getCurrentWorkshop()];
+              WHERE so.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
 
     // Agregar filtros
     if (!empty($search)) {
         $query .= " AND (
-            so.order_number LIKE ? OR 
-            c.name LIKE ? OR 
-            v.plates LIKE ? OR 
-            v.brand LIKE ? OR 
-            v.model LIKE ?
+            so.order_number LIKE '%" . addslashes($search) . "%' OR 
+            c.name LIKE '%" . addslashes($search) . "%' OR 
+            v.plates LIKE '%" . addslashes($search) . "%' OR 
+            v.brand LIKE '%" . addslashes($search) . "%' OR 
+            v.model LIKE '%" . addslashes($search) . "%'
         )";
-        $searchParam = "%$search%";
-        $params = array_merge($params, [$searchParam, $searchParam, $searchParam, $searchParam, $searchParam]);
     }
 
     if ($status !== 'all') {
-        $query .= " AND so.status = ?";
-        $params[] = $status;
+        $query .= " AND so.status = '" . addslashes($status) . "'";
     }
 
     if (!empty($date_from)) {
-        $query .= " AND DATE(so.created_at) >= ?";
-        $params[] = $date_from;
+        $query .= " AND DATE(so.created_at) >= '" . addslashes($date_from) . "'";
     }
 
     if (!empty($date_to)) {
-        $query .= " AND DATE(so.created_at) <= ?";
-        $params[] = $date_to;
+        $query .= " AND DATE(so.created_at) <= '" . addslashes($date_to) . "'";
     }
 
     // Agregar ordenamiento
@@ -72,20 +66,16 @@ try {
 
     // Obtener total de registros
     $countQuery = "SELECT COUNT(*) as total FROM ($query) as count_query";
-    $stmt = $db->prepare($countQuery);
-    $stmt->execute($params);
-    $total = $stmt->fetch()['total'];
+    $result = $db->query($countQuery);
+    $total = $result->fetch()['total'];
     $totalPages = ceil($total / $limit);
 
     // Agregar límite y offset
-    $query .= " LIMIT ? OFFSET ?";
-    $params[] = $limit;
-    $params[] = $offset;
+    $query .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
 
     // Ejecutar consulta
-    $stmt = $db->prepare($query);
-    $stmt->execute($params);
-    $orders = $stmt->fetchAll();
+    $result = $db->query($query);
+    $orders = $result->fetchAll();
 
 } catch (PDOException $e) {
     showError('Error al cargar las órdenes de servicio');
