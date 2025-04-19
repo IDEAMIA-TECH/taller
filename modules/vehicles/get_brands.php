@@ -17,12 +17,18 @@ try {
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // 10 segundos de timeout
     
     // Ejecutar la petición
     $response = curl_exec($ch);
     
     if (curl_errno($ch)) {
         throw new Exception('Error en la petición cURL: ' . curl_error($ch));
+    }
+    
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($httpCode !== 200) {
+        throw new Exception('Error HTTP: ' . $httpCode);
     }
     
     curl_close($ch);
@@ -38,12 +44,20 @@ try {
         throw new Exception('Formato de respuesta inválido');
     }
     
-    // Devolver solo las marcas
+    // Filtrar y formatear los resultados
+    $brands = array_map(function($item) {
+        return [
+            'Make_ID' => $item['Make_ID'],
+            'Make_Name' => $item['Make_Name']
+        ];
+    }, $data['Results']);
+    
+    // Devolver las marcas
     header('Content-Type: application/json');
-    echo json_encode($data['Results']);
+    echo json_encode($brands);
     
 } catch (Exception $e) {
     error_log("Error al obtener marcas de la API: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['error' => 'Error al obtener las marcas']);
+    echo json_encode(['error' => 'Error al obtener las marcas: ' . $e->getMessage()]);
 } 

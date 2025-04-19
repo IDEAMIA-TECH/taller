@@ -238,6 +238,13 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch('get_brands.php')
         .then(response => response.json())
         .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Ordenar las marcas alfabéticamente
+            data.sort((a, b) => a.Make_Name.localeCompare(b.Make_Name));
+            
             data.forEach(brand => {
                 const option = document.createElement('option');
                 option.value = brand.Make_ID;
@@ -247,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error al cargar las marcas:', error);
-            showError('Error al cargar las marcas');
+            showError('Error al cargar las marcas: ' + error.message);
         });
 
     brandSelect.addEventListener('change', function() {
@@ -259,9 +266,16 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(`get_models.php?makeId=${encodeURIComponent(makeId)}`)
                 .then(response => response.json())
                 .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Ordenar los modelos alfabéticamente
+                    data.sort((a, b) => a.Model_Name.localeCompare(b.Model_Name));
+                    
                     data.forEach(model => {
                         const option = document.createElement('option');
-                        option.value = model.Model_ID;
+                        option.value = model.Model_Name; // Usamos el nombre del modelo como valor
                         option.textContent = model.Model_Name;
                         modelSelect.appendChild(option);
                     });
@@ -269,14 +283,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error('Error al cargar los modelos:', error);
-                    showError('Error al cargar los modelos');
+                    showError('Error al cargar los modelos: ' + error.message);
                 });
         }
     });
 
-    // Si hay un valor de marca seleccionado previamente, cargar los modelos
-    if (brandSelect.value) {
-        brandSelect.dispatchEvent(new Event('change'));
+    // Función para mostrar errores
+    function showError(message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.card'));
     }
 });
 
