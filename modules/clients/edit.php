@@ -49,7 +49,7 @@ try {
 
     // Obtener códigos postales
     error_log("Obteniendo códigos postales");
-    $zip_sql = "SELECT DISTINCT zip_code, estado, municipio FROM zip_codes ORDER BY zip_code";
+    $zip_sql = "SELECT DISTINCT zip_code, estado as state, municipio as city FROM zip_codes ORDER BY zip_code";
     error_log("SQL códigos postales: " . $zip_sql);
     $zip_stmt = $db->query($zip_sql);
     $zip_codes = $zip_stmt->fetchAll(PDO::FETCH_ASSOC);
