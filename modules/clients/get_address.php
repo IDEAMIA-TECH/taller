@@ -12,37 +12,47 @@ if (!isset($_GET['zip_code']) || !preg_match('/^[0-9]{5}$/', $_GET['zip_code']))
 $zip_code = $_GET['zip_code'];
 
 try {
-    // Consultar la información del código postal
-    $stmt = $db->prepare("
-        SELECT DISTINCT 
-            c.name as city,
-            s.name as state,
-            GROUP_CONCAT(DISTINCT n.name) as neighborhoods
-        FROM zip_codes z
-        JOIN cities c ON z.id_city = c.id_city
-        JOIN states s ON c.id_state = s.id_state
-        JOIN neighborhoods n ON z.id_neighborhood = n.id_neighborhood
-        WHERE z.zip_code = ?
-        GROUP BY c.name, s.name
-    ");
+    // Usar la API de códigos postales de México
+    $url = "https://api.copomex.com/query/info_cp/{$zip_code}?token=pruebas";
     
-    $stmt->execute([$zip_code]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     
-    if ($result) {
-        // Separar las colonias en un array
-        $neighborhoods = explode(',', $result['neighborhoods']);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode === 200) {
+        $data = json_decode($response, true);
+        
+        if (isset($data['error'])) {
+            echo json_encode(['success' => false, 'message' => 'No se encontró información para este código postal']);
+            exit;
+        }
+        
+        // Extraer la información
+        $state = $data['estado'] ?? '';
+        $city = $data['municipio'] ?? '';
+        $neighborhoods = [];
+        
+        if (isset($data['asentamiento']) && is_array($data['asentamiento'])) {
+            foreach ($data['asentamiento'] as $asentamiento) {
+                $neighborhoods[] = $asentamiento['asentamiento'];
+            }
+        }
         
         echo json_encode([
             'success' => true,
-            'state' => $result['state'],
-            'city' => $result['city'],
+            'state' => $state,
+            'city' => $city,
             'neighborhoods' => $neighborhoods
         ]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'No se encontró información para este código postal']);
+        echo json_encode(['success' => false, 'message' => 'Error al consultar la información del código postal']);
     }
-} catch (PDOException $e) {
+} catch (Exception $e) {
     error_log("Error al consultar código postal: " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Error al consultar la información']);
 } 

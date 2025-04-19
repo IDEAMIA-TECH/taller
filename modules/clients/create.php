@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $checkTable = $db->query("SHOW COLUMNS FROM clients LIKE 'street'");
             if ($checkTable->rowCount() == 0) {
                 // Actualizar la tabla para incluir los nuevos campos
-                $db->exec("ALTER TABLE clients 
+                $db->query("ALTER TABLE clients 
                     ADD COLUMN street VARCHAR(255) NOT NULL AFTER rfc,
                     ADD COLUMN number VARCHAR(20) AFTER street,
                     ADD COLUMN number_int VARCHAR(20) AFTER number,
