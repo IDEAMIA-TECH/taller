@@ -12,6 +12,10 @@ if (!isWorkshopActive()) {
     redirect('templates/dashboard.php');
 }
 
+// Incluir el header y el sidebar
+include '../../includes/header.php';
+include '../../includes/sidebar.php';
+
 $errors = [];
 $success = false;
 $client_id = isset($_GET['client_id']) ? (int)$_GET['client_id'] : 0;
@@ -68,9 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-
-// Incluir el encabezado
-include '../../includes/header.php';
 ?>
 
 <div class="container-fluid">
