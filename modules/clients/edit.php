@@ -328,11 +328,72 @@ include '../../includes/header.php';
                                        placeholder="XAXX010101000">
                             </div>
 
-                            <div class="col-12">
-                                <label for="address" class="form-label">Dirección</label>
-                                <textarea class="form-control" id="address" name="address" rows="3"><?php 
-                                    echo isset($_POST['address']) ? htmlspecialchars($_POST['address']) : htmlspecialchars($client['address']); 
-                                ?></textarea>
+                            <div class="col-md-6">
+                                <label for="zip_code" class="form-label">Código Postal *</label>
+                                <select class="form-select" id="zip_code" name="zip_code" required>
+                                    <option value="">Seleccione un código postal</option>
+                                    <?php foreach ($zip_codes as $zip): ?>
+                                        <option value="<?php echo htmlspecialchars($zip['zip_code']); ?>"
+                                            <?php echo (isset($_POST['zip_code']) && $_POST['zip_code'] == $zip['zip_code']) || 
+                                                    (!isset($_POST['zip_code']) && $client['zip_code'] == $zip['zip_code']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($zip['zip_code'] . ' - ' . $zip['city'] . ', ' . $zip['state']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="neighborhood" class="form-label">Colonia *</label>
+                                <select class="form-select" id="neighborhood" name="neighborhood" required>
+                                    <option value="">Seleccione una colonia</option>
+                                    <?php foreach ($neighborhoods as $neighborhood): ?>
+                                        <option value="<?php echo htmlspecialchars($neighborhood['id_neighborhood']); ?>"
+                                            <?php echo (isset($_POST['neighborhood']) && $_POST['neighborhood'] == $neighborhood['id_neighborhood']) || 
+                                                    (!isset($_POST['neighborhood']) && $client['neighborhood'] == $neighborhood['id_neighborhood']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($neighborhood['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="street" class="form-label">Calle *</label>
+                                <input type="text" class="form-control" id="street" name="street" 
+                                       value="<?php echo isset($_POST['street']) ? htmlspecialchars($_POST['street']) : htmlspecialchars($client['street']); ?>" 
+                                       required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="number" class="form-label">Número Exterior *</label>
+                                <input type="text" class="form-control" id="number" name="number" 
+                                       value="<?php echo isset($_POST['number']) ? htmlspecialchars($_POST['number']) : htmlspecialchars($client['number']); ?>" 
+                                       required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="number_int" class="form-label">Número Interior</label>
+                                <input type="text" class="form-control" id="number_int" name="number_int" 
+                                       value="<?php echo isset($_POST['number_int']) ? htmlspecialchars($_POST['number_int']) : htmlspecialchars($client['number_int']); ?>">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="reference" class="form-label">Referencia</label>
+                                <input type="text" class="form-control" id="reference" name="reference" 
+                                       value="<?php echo isset($_POST['reference']) ? htmlspecialchars($_POST['reference']) : htmlspecialchars($client['reference']); ?>">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="city" class="form-label">Ciudad *</label>
+                                <input type="text" class="form-control" id="city" name="city" 
+                                       value="<?php echo isset($_POST['city']) ? htmlspecialchars($_POST['city']) : htmlspecialchars($client['city']); ?>" 
+                                       required readonly>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="state" class="form-label">Estado *</label>
+                                <input type="text" class="form-control" id="state" name="state" 
+                                       value="<?php echo isset($_POST['state']) ? htmlspecialchars($_POST['state']) : htmlspecialchars($client['state']); ?>" 
+                                       required readonly>
                             </div>
 
                             <div class="col-12">
