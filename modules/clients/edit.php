@@ -23,6 +23,13 @@ if ($id <= 0) {
     redirect('index.php');
 }
 
+// Función para mostrar errores
+function showError($message) {
+    $_SESSION['error_message'] = $message;
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
+}
+
 try {
     // Obtener información del cliente
     error_log("Preparando consulta para obtener datos del cliente");
@@ -36,14 +43,13 @@ try {
     if (!$client) {
         error_log("Cliente no encontrado");
         showError('Cliente no encontrado');
-        redirect('index.php');
     }
 
     error_log("Cliente encontrado: " . print_r($client, true));
 
     // Obtener códigos postales
     error_log("Obteniendo códigos postales");
-    $zip_sql = "SELECT DISTINCT zip_code, state, city FROM zip_codes ORDER BY zip_code";
+    $zip_sql = "SELECT DISTINCT zip_code, estado, municipio FROM zip_codes ORDER BY zip_code";
     error_log("SQL códigos postales: " . $zip_sql);
     $zip_stmt = $db->query($zip_sql);
     $zip_codes = $zip_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -66,11 +72,9 @@ try {
 } catch (PDOException $e) {
     error_log("Error PDO: " . $e->getMessage());
     showError('Error al obtener la información del cliente');
-    redirect('index.php');
 } catch (Exception $e) {
     error_log("Error general: " . $e->getMessage());
     showError('Error al procesar la solicitud');
-    redirect('index.php');
 }
 
 // Procesar el formulario
