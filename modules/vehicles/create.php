@@ -167,16 +167,16 @@ include '../../includes/header.php';
 
                             <div class="col-md-6">
                                 <label for="brand" class="form-label">Marca *</label>
-                                <input type="text" class="form-control" id="brand" name="brand" 
-                                       value="<?php echo isset($_POST['brand']) ? htmlspecialchars($_POST['brand']) : ''; ?>" 
-                                       required>
+                                <select class="form-select" id="brand" name="brand" required>
+                                    <option value="">Seleccione una marca</option>
+                                </select>
                             </div>
 
                             <div class="col-md-6">
                                 <label for="model" class="form-label">Modelo *</label>
-                                <input type="text" class="form-control" id="model" name="model" 
-                                       value="<?php echo isset($_POST['model']) ? htmlspecialchars($_POST['model']) : ''; ?>" 
-                                       required>
+                                <select class="form-select" id="model" name="model" required disabled>
+                                    <option value="">Seleccione un modelo</option>
+                                </select>
                             </div>
 
                             <div class="col-md-6">
@@ -230,6 +230,56 @@ include '../../includes/header.php';
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const brandSelect = document.getElementById('brand');
+    const modelSelect = document.getElementById('model');
+
+    // Cargar marcas al iniciar
+    fetch('get_brands.php')
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(brand => {
+                const option = document.createElement('option');
+                option.value = brand.Make_ID;
+                option.textContent = brand.Make_Name;
+                brandSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error al cargar las marcas:', error);
+            showError('Error al cargar las marcas');
+        });
+
+    brandSelect.addEventListener('change', function() {
+        const makeId = this.value;
+        modelSelect.innerHTML = '<option value="">Seleccione un modelo</option>';
+        modelSelect.disabled = true;
+        
+        if (makeId) {
+            fetch(`get_models.php?makeId=${encodeURIComponent(makeId)}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.Model_ID;
+                        option.textContent = model.Model_Name;
+                        modelSelect.appendChild(option);
+                    });
+                    modelSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error al cargar los modelos:', error);
+                    showError('Error al cargar los modelos');
+                });
+        }
+    });
+
+    // Si hay un valor de marca seleccionado previamente, cargar los modelos
+    if (brandSelect.value) {
+        brandSelect.dispatchEvent(new Event('change'));
+    }
+});
+
 document.getElementById('vehicleForm').addEventListener('submit', function(e) {
     const brand = document.getElementById('brand').value.trim();
     const model = document.getElementById('model').value.trim();
