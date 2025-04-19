@@ -63,8 +63,7 @@ try {
     // Obtener colonias para el código postal del cliente
     error_log("Obteniendo colonias para el código postal del cliente");
     $neighborhood_sql = "SELECT n.* FROM neighborhoods n 
-                        JOIN zip_codes z ON n.id_zip_code = z.id_zip_code 
-                        WHERE z.zip_code = ?";
+                        WHERE n.zip_code = ?";
     error_log("SQL colonias: " . $neighborhood_sql);
     error_log("Parámetros: " . print_r([$client['zip_code']], true));
     
