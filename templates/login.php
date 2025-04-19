@@ -6,6 +6,10 @@ $logs = [];
 $logs[] = "=== Inicio del proceso de login ===";
 $logs[] = "URL actual: " . $_SERVER['REQUEST_URI'];
 $logs[] = "Método de solicitud: " . $_SERVER['REQUEST_METHOD'];
+$logs[] = "Configuración de base de datos:";
+$logs[] = "- DB_HOST: " . DB_HOST;
+$logs[] = "- DB_NAME: " . DB_NAME;
+$logs[] = "- DB_USER: " . DB_USER;
 
 // Si el usuario ya está autenticado, redirigir al dashboard
 if (isAuthenticated()) {
@@ -32,16 +36,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Buscar usuario
-        $logs[] = "Buscando usuario en la base de datos";
-        $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $logs[] = "Intentando conectar a la base de datos...";
+        try {
+            $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $logs[] = "Conexión a la base de datos exitosa";
+        } catch (PDOException $e) {
+            $logs[] = "Error de conexión a la base de datos: " . $e->getMessage();
+            throw new Exception('Error de conexión a la base de datos');
+        }
         
+        $logs[] = "Preparando consulta SQL...";
         $stmt = $pdo->prepare("
             SELECT u.*, w.name as workshop_name, w.subscription_status as workshop_status
             FROM users u
             JOIN workshops w ON u.id_workshop = w.id_workshop
             WHERE u.username = ? AND u.status = 'active'
         ");
+        
+        $logs[] = "Ejecutando consulta con username: " . $username;
         $stmt->execute([$username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -51,12 +64,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $logs[] = "Usuario encontrado: " . $user['username'];
+        $logs[] = "Estado del taller: " . $user['workshop_status'];
+        $logs[] = "Verificando contraseña...";
 
         // Verificar contraseña
         if (!password_verify($password, $user['password'])) {
             $logs[] = "Error: Contraseña incorrecta";
             throw new Exception('Usuario o contraseña incorrectos');
         }
+
+        $logs[] = "Contraseña verificada correctamente";
 
         // Verificar estado del taller
         if ($user['workshop_status'] !== 'active') {
@@ -65,6 +82,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $logs[] = "Iniciando sesión para el usuario: " . $user['username'];
+        $logs[] = "Datos de sesión a guardar:";
+        $logs[] = "- id_user: " . $user['id_user'];
+        $logs[] = "- username: " . $user['username'];
+        $logs[] = "- role: " . $user['role'];
+        $logs[] = "- id_workshop: " . $user['id_workshop'];
 
         // Iniciar sesión
         $_SESSION['id_user'] = $user['id_user'];
@@ -75,10 +97,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['id_workshop'] = $user['id_workshop'];
         $_SESSION['workshop_name'] = $user['workshop_name'];
 
+        $logs[] = "Sesión iniciada correctamente";
+
         // Actualizar último login
-        $logs[] = "Actualizando último login";
+        $logs[] = "Actualizando último login...";
         $stmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id_user = ?");
         $stmt->execute([$user['id_user']]);
+        $logs[] = "Último login actualizado";
 
         $logs[] = "Redirigiendo al dashboard";
         // Redirigir al dashboard
@@ -89,6 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $e->getMessage();
     }
 }
+
+// Guardar logs en un archivo
+$logFile = __DIR__ . '/../logs/login_' . date('Y-m-d') . '.log';
+file_put_contents($logFile, implode("\n", $logs) . "\n\n", FILE_APPEND);
 ?>
 
 <!DOCTYPE html>
