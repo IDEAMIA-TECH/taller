@@ -34,7 +34,7 @@ $db = Database::getInstance();
 
 // Funciones de utilidad
 function isLoggedIn() {
-    return isset($_SESSION['user_id']);
+    return isset($_SESSION['id_user']);
 }
 
 function requireLogin() {
@@ -144,7 +144,7 @@ if (!in_array($current_page, $public_pages) && !isLoggedIn()) {
 
 // Función para verificar si el usuario está autenticado
 function isAuthenticated() {
-    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+    return isset($_SESSION['id_user']) && !empty($_SESSION['id_user']);
 }
 
 // Función para verificar el rol del usuario
