@@ -87,24 +87,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     DROP COLUMN address");
             }
 
-            $stmt = $db->prepare("INSERT INTO clients (id_workshop, name, phone, email, rfc, 
-                                street, number, number_int, neighborhood, city, state, zip_code, reference) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([
-                getCurrentWorkshop(),
-                $name,
-                $phone,
-                $email,
-                $rfc,
-                $street,
-                $number,
-                $number_int,
-                $neighborhood,
-                $city,
-                $state,
-                $zip_code,
-                $reference
-            ]);
+            // Usar query directamente con valores escapados
+            $query = "INSERT INTO clients (id_workshop, name, phone, email, rfc, 
+                    street, number, number_int, neighborhood, city, state, zip_code, reference) 
+                    VALUES (
+                        '" . getCurrentWorkshop() . "',
+                        '" . $db->escape($name) . "',
+                        '" . $db->escape($phone) . "',
+                        '" . $db->escape($email) . "',
+                        '" . $db->escape($rfc) . "',
+                        '" . $db->escape($street) . "',
+                        '" . $db->escape($number) . "',
+                        '" . $db->escape($number_int) . "',
+                        '" . $db->escape($neighborhood) . "',
+                        '" . $db->escape($city) . "',
+                        '" . $db->escape($state) . "',
+                        '" . $db->escape($zip_code) . "',
+                        '" . $db->escape($reference) . "'
+                    )";
+            
+            $db->query($query);
 
             $success = true;
             showSuccess('Cliente agregado correctamente');
