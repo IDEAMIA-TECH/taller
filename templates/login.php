@@ -1,4 +1,9 @@
 <?php
+// Iniciar sesión si no está iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once '../includes/config.php';
 
 // Array para almacenar los logs
@@ -11,6 +16,7 @@ $logs[] = "- DB_HOST: " . DB_HOST;
 $logs[] = "- DB_NAME: " . DB_NAME;
 $logs[] = "- DB_USER: " . DB_USER;
 $logs[] = "Estado de la sesión: " . (isset($_SESSION) ? "Iniciada" : "No iniciada");
+$logs[] = "Datos de sesión: " . print_r($_SESSION, true);
 $logs[] = "Usuario autenticado: " . (isAuthenticated() ? "Sí" : "No");
 
 // Si el usuario ya está autenticado, redirigir al dashboard
@@ -101,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['workshop_name'] = $user['workshop_name'];
 
         $logs[] = "Sesión iniciada correctamente";
+        $logs[] = "Nuevo estado de sesión: " . print_r($_SESSION, true);
 
         // Actualizar último login
         $logs[] = "Actualizando último login...";
@@ -204,7 +211,7 @@ echo "<script>console.log('Logs de login:', " . json_encode($logs) . ");</script
                         <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                     <?php endif; ?>
 
-                    <form method="POST" action="<?php echo APP_URL; ?>/login" id="loginForm">
+                    <form method="POST" action="<?php echo APP_URL; ?>/login" id="loginForm" onsubmit="return validateForm()">
                         <div class="mb-3">
                             <label for="username" class="form-label">Usuario</label>
                             <div class="input-group">
@@ -251,9 +258,8 @@ echo "<script>console.log('Logs de login:', " . json_encode($logs) . ");</script
     <script src="<?php echo APP_URL; ?>/assets/js/main.js"></script>
 
     <script>
-        // Función para manejar el envío del formulario
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            console.log('Formulario enviado');
+        function validateForm() {
+            console.log('Validando formulario...');
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -261,12 +267,17 @@ echo "<script>console.log('Logs de login:', " . json_encode($logs) . ");</script
             if (!username || !password) {
                 console.error('Error: Campos vacíos');
                 alert('Por favor complete todos los campos');
-                e.preventDefault();
                 return false;
             }
             
-            console.log('Enviando formulario...');
+            console.log('Formulario válido, enviando...');
             return true;
+        }
+
+        // Agregar evento de submit al formulario
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            console.log('Formulario enviado');
+            return validateForm();
         });
 
         // Mostrar logs iniciales
