@@ -311,9 +311,9 @@ include '../../includes/header.php';
 
                             <div class="col-md-4">
                                 <label for="neighborhood" class="form-label">Colonia *</label>
-                                <input type="text" class="form-control" id="neighborhood" name="neighborhood" 
-                                       value="<?php echo isset($_POST['neighborhood']) ? htmlspecialchars($_POST['neighborhood']) : ''; ?>" 
-                                       required>
+                                <select class="form-select" id="neighborhood" name="neighborhood" required>
+                                    <option value="">Seleccione una colonia</option>
+                                </select>
                             </div>
 
                             <div class="col-md-4">
@@ -384,6 +384,50 @@ document.getElementById('clientForm').addEventListener('submit', function(e) {
         e.preventDefault();
         alert('El RFC no es válido');
         return;
+    }
+});
+
+// Función para autocompletar dirección basada en código postal
+document.getElementById('zip_code').addEventListener('change', function() {
+    const zipCode = this.value.trim();
+    
+    if (zipCode.length === 5) {
+        // Mostrar indicador de carga
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'spinner-border spinner-border-sm text-primary';
+        loadingIndicator.setAttribute('role', 'status');
+        this.parentNode.appendChild(loadingIndicator);
+        
+        // Hacer la llamada AJAX
+        fetch(`/modules/clients/get_address.php?zip_code=${zipCode}`)
+            .then(response => response.json())
+            .then(data => {
+                // Remover indicador de carga
+                this.parentNode.removeChild(loadingIndicator);
+                
+                if (data.success) {
+                    // Actualizar campos
+                    document.getElementById('state').value = data.state;
+                    document.getElementById('city').value = data.city;
+                    
+                    // Actualizar select de colonias
+                    const neighborhoodSelect = document.getElementById('neighborhood');
+                    neighborhoodSelect.innerHTML = '<option value="">Seleccione una colonia</option>';
+                    
+                    data.neighborhoods.forEach(neighborhood => {
+                        const option = document.createElement('option');
+                        option.value = neighborhood;
+                        option.textContent = neighborhood;
+                        neighborhoodSelect.appendChild(option);
+                    });
+                } else {
+                    alert('No se encontró información para este código postal');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al obtener la información del código postal');
+            });
     }
 });
 </script>
