@@ -136,8 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             error_log("Cliente guardado exitosamente");
             $success = true;
-            showSuccess('Cliente agregado correctamente');
-            redirect('index.php');
+            $_SESSION['success_message'] = 'Cliente agregado correctamente';
+            header('Location: index.php');
+            exit;
 
         } catch (PDOException $e) {
             error_log("Error PDO al guardar cliente: " . $e->getMessage());
