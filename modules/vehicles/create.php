@@ -18,9 +18,9 @@ $client_id = isset($_GET['client_id']) ? (int)$_GET['client_id'] : 0;
 
 // Obtener lista de clientes para el select
 try {
-    $sql = "SELECT id_client, name FROM clients WHERE id_workshop = " . $db->quote(getCurrentWorkshop()) . " ORDER BY name";
-    $result = $db->query($sql);
-    $clients = $result->fetchAll(PDO::FETCH_ASSOC);
+    $sql = "SELECT id_client, name FROM clients WHERE id_workshop = :id_workshop ORDER BY name";
+    $stmt = $db->query($sql, ['id_workshop' => getCurrentWorkshop()]);
+    $clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     showError('Error al cargar los clientes');
     redirect('index.php');
