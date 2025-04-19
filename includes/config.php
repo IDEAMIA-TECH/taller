@@ -81,7 +81,10 @@ function getMessage() {
 }
 
 function getCurrentWorkshop() {
-    return isset($_SESSION['id_workshop']) ? $_SESSION['id_workshop'] : null;
+    if (isset($_SESSION['id_workshop'])) {
+        return $_SESSION['id_workshop'];
+    }
+    return null;
 }
 
 function getCurrentUser() {
