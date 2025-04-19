@@ -1,46 +1,89 @@
 <?php
 require_once '../includes/config.php';
 
-// Si ya está logueado, redirigir al dashboard
-if (isLoggedIn()) {
-    redirect('dashboard');
+// Array para almacenar los logs
+$logs = [];
+$logs[] = "=== Inicio del proceso de login ===";
+$logs[] = "URL actual: " . $_SERVER['REQUEST_URI'];
+$logs[] = "Método de solicitud: " . $_SERVER['REQUEST_METHOD'];
+
+// Si el usuario ya está autenticado, redirigir al dashboard
+if (isAuthenticated()) {
+    $logs[] = "Usuario ya autenticado, redirigiendo a dashboard";
+    redirect('dashboard.php');
 }
 
-$error = null;
+$error = '';
 
-// Procesar el formulario de login
+// Procesar formulario de login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+    $logs[] = "Método POST detectado";
+    $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (empty($username) || empty($password)) {
-        $error = 'Por favor ingresa tu usuario y contraseña';
-    } else {
-        $db = Database::getInstance();
-        $user = $db->fetch(
-            "SELECT * FROM users WHERE username = ? AND status = 'active'",
-            [$username]
-        );
+    $logs[] = "Datos recibidos - Usuario: " . $username;
+    $logs[] = "Datos recibidos - Contraseña: " . (!empty($password) ? "***" : "vacía");
 
-        if ($user && password_verify($password, $user['password'])) {
-            // Iniciar sesión
-            $_SESSION['user_id'] = $user['id_user'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['role'] = $user['role'];
-            $_SESSION['workshop_id'] = $user['id_workshop'];
-            $_SESSION['full_name'] = $user['full_name'];
-
-            // Actualizar último login
-            $db->query(
-                "UPDATE users SET last_login = NOW() WHERE id_user = ?",
-                [$user['id_user']]
-            );
-
-            // Redirigir al dashboard
-            redirect('dashboard');
-        } else {
-            $error = 'Usuario o contraseña incorrectos';
+    try {
+        // Validar campos
+        if (empty($username) || empty($password)) {
+            $logs[] = "Error: Campos vacíos";
+            throw new Exception('Por favor ingrese usuario y contraseña');
         }
+
+        // Buscar usuario
+        $logs[] = "Buscando usuario en la base de datos";
+        $stmt = $db->prepare("
+            SELECT u.*, w.name as workshop_name, w.status as workshop_status
+            FROM users u
+            JOIN workshops w ON u.id_workshop = w.id_workshop
+            WHERE u.username = ? AND u.status = 'active'
+        ");
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            $logs[] = "Error: Usuario no encontrado o inactivo";
+            throw new Exception('Usuario o contraseña incorrectos');
+        }
+
+        $logs[] = "Usuario encontrado: " . $user['username'];
+
+        // Verificar contraseña
+        if (!password_verify($password, $user['password'])) {
+            $logs[] = "Error: Contraseña incorrecta";
+            throw new Exception('Usuario o contraseña incorrectos');
+        }
+
+        // Verificar estado del taller
+        if ($user['workshop_status'] !== 'active') {
+            $logs[] = "Error: Taller inactivo";
+            throw new Exception('El taller se encuentra inactivo. Por favor contacte al administrador.');
+        }
+
+        $logs[] = "Iniciando sesión para el usuario: " . $user['username'];
+
+        // Iniciar sesión
+        $_SESSION['id_user'] = $user['id_user'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['full_name'] = $user['full_name'];
+        $_SESSION['email'] = $user['email'];
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['id_workshop'] = $user['id_workshop'];
+        $_SESSION['workshop_name'] = $user['workshop_name'];
+
+        // Actualizar último login
+        $logs[] = "Actualizando último login";
+        $stmt = $db->prepare("UPDATE users SET last_login = NOW() WHERE id_user = ?");
+        $stmt->execute([$user['id_user']]);
+
+        $logs[] = "Redirigiendo al dashboard";
+        // Redirigir al dashboard
+        redirect('dashboard.php');
+
+    } catch (Exception $e) {
+        $logs[] = "Error en el proceso de login: " . $e->getMessage();
+        $error = $e->getMessage();
     }
 }
 ?>
@@ -102,20 +145,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-container">
             <div class="card">
                 <div class="card-header">
-                    <img src="<?php echo getResourcePath('assets'); ?>/img/logo.png" alt="<?php echo APP_NAME; ?>" class="logo">
+                    <img src="<?php echo ASSETS_URL; ?>/img/logo.png" alt="<?php echo APP_NAME; ?>" class="logo">
                     <h4 class="mb-4">Iniciar Sesión</h4>
                 </div>
                 <div class="card-body">
                     <?php if ($error): ?>
-                        <div class="alert alert-danger"><?php echo $error; ?></div>
+                        <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                     <?php endif; ?>
 
-                    <form method="POST" action="">
+                    <form method="POST" action="" id="loginForm">
                         <div class="mb-3">
                             <label for="username" class="form-label">Usuario</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                <input type="text" class="form-control" id="username" name="username" required>
+                                <input type="text" class="form-control" id="username" name="username" required 
+                                       value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -126,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="remember">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
                             <label class="form-check-label" for="remember">Recordarme</label>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">
@@ -154,5 +198,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     <!-- Custom JS -->
     <script src="<?php echo APP_URL; ?>/assets/js/main.js"></script>
+
+    <script>
+        // Función para manejar el envío del formulario
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            console.log('Formulario enviado');
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                console.error('Error: Campos vacíos');
+                alert('Por favor complete todos los campos');
+                e.preventDefault();
+                return false;
+            }
+            
+            console.log('Enviando formulario...');
+            return true;
+        });
+
+        // Mostrar logs iniciales
+        const logs = <?php echo json_encode($logs); ?>;
+        console.log('Logs iniciales:', logs);
+    </script>
 </body>
 </html>
