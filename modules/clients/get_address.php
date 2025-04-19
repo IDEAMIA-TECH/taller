@@ -18,60 +18,96 @@ $zip_code = $_GET['zip_code'];
 $logs[] = "Código postal recibido: " . $zip_code;
 
 try {
-    // Usar la API de México
-    $url = "https://api.correosdemexico.gob.mx/v1/codigo-postal/{$zip_code}";
-    $logs[] = "URL de la API: " . $url;
-    
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Accept: application/json',
-        'Content-Type: application/json'
-    ]);
-    
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $logs[] = "Código HTTP de respuesta: " . $httpCode;
-    $logs[] = "Respuesta de la API: " . $response;
-    
-    curl_close($ch);
-    
-    if ($httpCode === 200) {
-        $data = json_decode($response, true);
-        $logs[] = "Datos decodificados: " . print_r($data, true);
+    // Verificar si las tablas existen
+    $checkTables = $db->query("SHOW TABLES LIKE 'zip_codes'");
+    if ($checkTables->rowCount() == 0) {
+        // Crear tablas si no existen
+        $db->query("CREATE TABLE IF NOT EXISTS states (
+            id_state INT PRIMARY KEY AUTO_INCREMENT,
+            name VARCHAR(100) NOT NULL
+        )");
         
-        if (empty($data) || !isset($data['estado'])) {
-            $logs[] = "No se encontraron datos para el código postal";
-            echo json_encode(['success' => false, 'message' => 'No se encontró información para este código postal', 'logs' => $logs]);
-            exit;
+        $db->query("CREATE TABLE IF NOT EXISTS cities (
+            id_city INT PRIMARY KEY AUTO_INCREMENT,
+            id_state INT NOT NULL,
+            name VARCHAR(100) NOT NULL,
+            FOREIGN KEY (id_state) REFERENCES states(id_state)
+        )");
+        
+        $db->query("CREATE TABLE IF NOT EXISTS neighborhoods (
+            id_neighborhood INT PRIMARY KEY AUTO_INCREMENT,
+            name VARCHAR(100) NOT NULL
+        )");
+        
+        $db->query("CREATE TABLE IF NOT EXISTS zip_codes (
+            id_zip_code INT PRIMARY KEY AUTO_INCREMENT,
+            zip_code VARCHAR(5) NOT NULL,
+            id_state INT NOT NULL,
+            id_city INT NOT NULL,
+            id_neighborhood INT NOT NULL,
+            FOREIGN KEY (id_state) REFERENCES states(id_state),
+            FOREIGN KEY (id_city) REFERENCES cities(id_city),
+            FOREIGN KEY (id_neighborhood) REFERENCES neighborhoods(id_neighborhood)
+        )");
+        
+        // Insertar datos de ejemplo para Querétaro
+        $db->query("INSERT INTO states (name) VALUES ('Querétaro')");
+        $stateId = $db->lastInsertId();
+        
+        $db->query("INSERT INTO cities (id_state, name) VALUES ($stateId, 'Querétaro')");
+        $cityId = $db->lastInsertId();
+        
+        // Insertar algunas colonias de ejemplo
+        $neighborhoods = [
+            'Centro',
+            'Jardines de Querétaro',
+            'Lomas de Casa Blanca',
+            'Villas del Sol',
+            'Lomas del Marqués'
+        ];
+        
+        foreach ($neighborhoods as $neighborhood) {
+            $db->query("INSERT INTO neighborhoods (name) VALUES ('$neighborhood')");
+            $neighborhoodId = $db->lastInsertId();
+            
+            $db->query("INSERT INTO zip_codes (zip_code, id_state, id_city, id_neighborhood) 
+                        VALUES ('76246', $stateId, $cityId, $neighborhoodId)");
         }
+    }
+    
+    // Consultar la información del código postal
+    $stmt = $db->prepare("
+        SELECT DISTINCT 
+            s.name as state,
+            c.name as city,
+            GROUP_CONCAT(DISTINCT n.name) as neighborhoods
+        FROM zip_codes z
+        JOIN states s ON z.id_state = s.id_state
+        JOIN cities c ON z.id_city = c.id_city
+        JOIN neighborhoods n ON z.id_neighborhood = n.id_neighborhood
+        WHERE z.zip_code = ?
+        GROUP BY s.name, c.name
+    ");
+    
+    $stmt->execute([$zip_code]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($result) {
+        $neighborhoods = explode(',', $result['neighborhoods']);
         
-        // Extraer la información
-        $state = $data['estado'] ?? '';
-        $city = $data['municipio'] ?? '';
-        $neighborhoods = [];
-        
-        if (isset($data['asentamientos']) && is_array($data['asentamientos'])) {
-            foreach ($data['asentamientos'] as $asentamiento) {
-                $neighborhoods[] = $asentamiento['nombre'];
-            }
-        }
-        
-        $logs[] = "Información extraída - Estado: " . $state . ", Ciudad: " . $city;
+        $logs[] = "Información encontrada - Estado: " . $result['state'] . ", Ciudad: " . $result['city'];
         $logs[] = "Colonias encontradas: " . implode(', ', $neighborhoods);
         
         echo json_encode([
             'success' => true,
-            'state' => $state,
-            'city' => $city,
+            'state' => $result['state'],
+            'city' => $result['city'],
             'neighborhoods' => $neighborhoods,
             'logs' => $logs
         ]);
     } else {
-        $logs[] = "Error en la petición HTTP";
-        echo json_encode(['success' => false, 'message' => 'Error al consultar la información del código postal', 'logs' => $logs]);
+        $logs[] = "No se encontraron datos para el código postal";
+        echo json_encode(['success' => false, 'message' => 'No se encontró información para este código postal', 'logs' => $logs]);
     }
 } catch (Exception $e) {
     $logs[] = "Excepción capturada: " . $e->getMessage();
