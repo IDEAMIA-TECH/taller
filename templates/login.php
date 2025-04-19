@@ -33,14 +33,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Buscar usuario
         $logs[] = "Buscando usuario en la base de datos";
-        $stmt = $db->prepare("
+        $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+        $stmt = $pdo->prepare("
             SELECT u.*, w.name as workshop_name, w.status as workshop_status
             FROM users u
             JOIN workshops w ON u.id_workshop = w.id_workshop
             WHERE u.username = ? AND u.status = 'active'
         ");
         $stmt->execute([$username]);
-        $user = $stmt->fetch();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$user) {
             $logs[] = "Error: Usuario no encontrado o inactivo";
@@ -74,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Actualizar último login
         $logs[] = "Actualizando último login";
-        $stmt = $db->prepare("UPDATE users SET last_login = NOW() WHERE id_user = ?");
+        $stmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id_user = ?");
         $stmt->execute([$user['id_user']]);
 
         $logs[] = "Redirigiendo al dashboard";
