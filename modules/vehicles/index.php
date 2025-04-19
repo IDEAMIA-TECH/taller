@@ -21,10 +21,9 @@ $offset = ($page - 1) * $limit;
 
 try {
     // Construir la consulta base
-    $query = "SELECT v.*, c.name as client_name, b.name as brand_name 
+    $query = "SELECT v.*, c.name as client_name 
               FROM vehicles v 
               JOIN clients c ON v.id_client = c.id_client 
-              JOIN vehicle_brands b ON v.brand = b.id_brand 
               WHERE v.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
 
     // Agregar filtro por cliente si existe
@@ -35,7 +34,7 @@ try {
     // Agregar búsqueda si existe
     if (!empty($search)) {
         $searchParam = addslashes("%$search%");
-        $query .= " AND (b.name LIKE '$searchParam' OR v.model LIKE '$searchParam' OR v.plates LIKE '$searchParam' OR c.name LIKE '$searchParam')";
+        $query .= " AND (v.brand LIKE '$searchParam' OR v.model LIKE '$searchParam' OR v.plates LIKE '$searchParam' OR c.name LIKE '$searchParam')";
     }
 
     // Agregar orden y límite
@@ -49,7 +48,6 @@ try {
     $countQuery = "SELECT COUNT(*) as total 
                    FROM vehicles v 
                    JOIN clients c ON v.id_client = c.id_client 
-                   JOIN vehicle_brands b ON v.brand = b.id_brand 
                    WHERE v.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
 
     if ($client_id > 0) {
@@ -58,7 +56,7 @@ try {
 
     if (!empty($search)) {
         $searchParam = addslashes("%$search%");
-        $countQuery .= " AND (b.name LIKE '$searchParam' OR v.model LIKE '$searchParam' OR v.plates LIKE '$searchParam' OR c.name LIKE '$searchParam')";
+        $countQuery .= " AND (v.brand LIKE '$searchParam' OR v.model LIKE '$searchParam' OR v.plates LIKE '$searchParam' OR c.name LIKE '$searchParam')";
     }
 
     $result = $db->query($countQuery);
@@ -255,7 +253,7 @@ include '../../includes/header.php';
                                 <?php else: ?>
                                     <?php foreach ($vehicles as $vehicle): ?>
                                         <tr>
-                                            <td><?php echo htmlspecialchars($vehicle['brand_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($vehicle['brand']); ?></td>
                                             <td><?php echo htmlspecialchars($vehicle['model']); ?></td>
                                             <td><?php echo $vehicle['year']; ?></td>
                                             <td><?php echo htmlspecialchars($vehicle['plates']); ?></td>

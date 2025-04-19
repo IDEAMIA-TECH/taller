@@ -21,15 +21,17 @@ if ($id <= 0) {
 }
 
 try {
-    // Obtener datos del vehículo y cliente
-    $stmt = $db->prepare("
-        SELECT v.*, c.name as client_name, c.phone as client_phone, c.email as client_email
-        FROM vehicles v
-        JOIN clients c ON v.id_client = c.id_client
-        WHERE v.id_vehicle = ? AND v.id_workshop = ?
-    ");
-    $stmt->execute([$id, getCurrentWorkshop()]);
-    $vehicle = $stmt->fetch();
+    // Obtener información del vehículo
+    $query = "SELECT v.*, c.name as client_name, c.phone as client_phone, c.email as client_email,
+                     b.name as brand_name
+              FROM vehicles v 
+              JOIN clients c ON v.id_client = c.id_client 
+              JOIN vehicle_brands b ON v.brand = b.id_brand 
+              WHERE v.id_vehicle = '" . addslashes($id) . "' 
+              AND v.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
+    
+    $result = $db->query($query);
+    $vehicle = $result->fetch(PDO::FETCH_ASSOC);
 
     if (!$vehicle) {
         showError('Vehículo no encontrado');
@@ -37,30 +39,30 @@ try {
     }
 
     // Obtener historial de servicios
-    $stmt = $db->prepare("
-        SELECT o.*, u.full_name as mechanic_name
-        FROM service_orders o
-        LEFT JOIN users u ON o.id_user_assigned = u.id_user
-        WHERE o.id_vehicle = ?
-        ORDER BY o.created_at DESC
-        LIMIT 5
-    ");
-    $stmt->execute([$id]);
-    $service_history = $stmt->fetchAll();
+    $historyQuery = "SELECT so.*, u.full_name as mechanic_name 
+                    FROM service_orders so 
+                    LEFT JOIN users u ON so.id_user_assigned = u.id_user 
+                    WHERE so.id_vehicle = '" . addslashes($id) . "' 
+                    AND so.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'
+                    ORDER BY so.created_at DESC";
+    
+    $result = $db->query($historyQuery);
+    $serviceHistory = $result->fetchAll(PDO::FETCH_ASSOC);
 
-    // Obtener recordatorios de mantenimiento
-    $stmt = $db->prepare("
-        SELECT r.*, s.name as service_name
-        FROM reminders r
-        JOIN services s ON r.id_service = s.id_service
-        WHERE r.id_vehicle = ? AND r.status = 'pending'
-        ORDER BY r.due_date ASC
-    ");
-    $stmt->execute([$id]);
-    $reminders = $stmt->fetchAll();
+    // Obtener recordatorios pendientes
+    $remindersQuery = "SELECT r.*, s.name as service_name 
+                      FROM reminders r 
+                      JOIN services s ON r.id_service = s.id_service 
+                      WHERE r.id_vehicle = '" . addslashes($id) . "' 
+                      AND r.status = 'pending' 
+                      ORDER BY r.due_date ASC";
+    
+    $result = $db->query($remindersQuery);
+    $reminders = $result->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
-    showError('Error al cargar los datos del vehículo');
+    error_log("Error en view.php: " . $e->getMessage());
+    showError('Error al cargar la información del vehículo. Por favor, intente más tarde.');
     redirect('index.php');
 }
 
@@ -91,7 +93,7 @@ include '../../includes/header.php';
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Marca:</strong> <?php echo htmlspecialchars($vehicle['brand']); ?></p>
+                            <p><strong>Marca:</strong> <?php echo htmlspecialchars($vehicle['brand_name']); ?></p>
                             <p><strong>Modelo:</strong> <?php echo htmlspecialchars($vehicle['model']); ?></p>
                             <p><strong>Año:</strong> <?php echo $vehicle['year']; ?></p>
                             <p><strong>Color:</strong> <?php echo htmlspecialchars($vehicle['color']); ?></p>
@@ -132,7 +134,7 @@ include '../../includes/header.php';
                     </a>
                 </div>
                 <div class="card-body">
-                    <?php if (empty($service_history)): ?>
+                    <?php if (empty($serviceHistory)): ?>
                         <p class="text-muted">No hay servicios registrados para este vehículo.</p>
                     <?php else: ?>
                         <div class="table-responsive">
@@ -148,7 +150,7 @@ include '../../includes/header.php';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($service_history as $order): ?>
+                                    <?php foreach ($serviceHistory as $order): ?>
                                         <tr>
                                             <td><?php echo htmlspecialchars($order['order_number']); ?></td>
                                             <td><?php echo date('d/m/Y', strtotime($order['created_at'])); ?></td>
