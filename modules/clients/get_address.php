@@ -98,7 +98,7 @@ try {
     
     // Consultar la información del código postal
     $logs[] = "Consultando información del código postal";
-    $stmt = $db->prepare("
+    $result = $db->query("
         SELECT DISTINCT 
             s.name as state,
             c.name as city,
@@ -107,12 +107,9 @@ try {
         JOIN states s ON z.id_state = s.id_state
         JOIN cities c ON z.id_city = c.id_city
         JOIN neighborhoods n ON z.id_neighborhood = n.id_neighborhood
-        WHERE z.zip_code = ?
+        WHERE z.zip_code = '$zip_code'
         GROUP BY s.name, c.name
-    ");
-    
-    $stmt->execute([$zip_code]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    ")->fetch(PDO::FETCH_ASSOC);
     
     if ($result) {
         $neighborhoods = explode(',', $result['neighborhoods']);
