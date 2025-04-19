@@ -86,8 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->query($sql);
 
             $success = true;
-            showSuccess('Servicio actualizado correctamente');
-            redirect('index.php');
+            $_SESSION['success_message'] = 'Servicio actualizado correctamente';
+            redirect(APP_URL . '/modules/services/index.php');
 
         } catch (PDOException $e) {
             $errors[] = 'Error al actualizar el servicio. Por favor, intente más tarde.';
@@ -222,6 +222,16 @@ include '../../includes/header.php';
                     <i class="fas fa-arrow-left"></i> Volver
                 </a>
             </div>
+
+            <?php if (isset($_SESSION['success_message'])): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <?php 
+                    echo $_SESSION['success_message'];
+                    unset($_SESSION['success_message']);
+                    ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endif; ?>
 
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
