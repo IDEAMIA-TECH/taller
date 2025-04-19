@@ -241,7 +241,23 @@ include '../../includes/header.php';
                                 <dd class="col-sm-8"><?php echo htmlspecialchars($client['rfc']); ?></dd>
 
                                 <dt class="col-sm-4">Dirección</dt>
-                                <dd class="col-sm-8"><?php echo nl2br(htmlspecialchars($client['address'])); ?></dd>
+                                <dd class="col-sm-8">
+                                    <?php 
+                                    $address = [
+                                        $client['street'],
+                                        $client['number'],
+                                        $client['number_int'] ? 'Int. ' . $client['number_int'] : '',
+                                        $client['neighborhood'],
+                                        $client['city'],
+                                        $client['state'],
+                                        'C.P. ' . $client['zip_code']
+                                    ];
+                                    echo htmlspecialchars(implode(', ', array_filter($address)));
+                                    if (!empty($client['reference'])) {
+                                        echo '<br><small class="text-muted">Referencia: ' . htmlspecialchars($client['reference']) . '</small>';
+                                    }
+                                    ?>
+                                </dd>
 
                                 <dt class="col-sm-4">Registro</dt>
                                 <dd class="col-sm-8"><?php echo date('d/m/Y', strtotime($client['created_at'])); ?></dd>

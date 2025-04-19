@@ -49,7 +49,20 @@ try {
 
     // Obtener códigos postales
     error_log("Obteniendo códigos postales");
-    $zip_sql = "SELECT DISTINCT zip_code, estado as state, municipio as city FROM zip_codes ORDER BY zip_code";
+    $zip_sql = "SHOW COLUMNS FROM zip_codes";
+    error_log("SQL estructura: " . $zip_sql);
+    $zip_stmt = $db->query($zip_sql);
+    $columns = $zip_stmt->fetchAll(PDO::FETCH_COLUMN);
+    error_log("Columnas disponibles: " . print_r($columns, true));
+
+    // Determinar los nombres correctos de las columnas
+    $state_column = in_array('estado', $columns) ? 'estado' : 
+                   (in_array('state', $columns) ? 'state' : 'estado');
+    $city_column = in_array('municipio', $columns) ? 'municipio' : 
+                  (in_array('city', $columns) ? 'city' : 'municipio');
+
+    $zip_sql = "SELECT DISTINCT zip_code, $state_column as state, $city_column as city 
+                FROM zip_codes ORDER BY zip_code";
     error_log("SQL códigos postales: " . $zip_sql);
     $zip_stmt = $db->query($zip_sql);
     $zip_codes = $zip_stmt->fetchAll(PDO::FETCH_ASSOC);
