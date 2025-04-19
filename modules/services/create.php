@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'type' => 'success',
                 'message' => 'Servicio creado correctamente'
             ];
-            redirect('index.php');
+            redirect(APP_URL . '/modules/services/index.php');
 
         } catch (PDOException $e) {
             error_log("Error en services/create.php: " . $e->getMessage());
