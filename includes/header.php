@@ -16,6 +16,72 @@ require_once 'config.php';
     
     <!-- Custom CSS -->
     <link href="<?php echo APP_URL; ?>/assets/css/main.css" rel="stylesheet">
+    
+    <style>
+        /* Estilos para el sidebar */
+        .sidebar {
+            position: fixed;
+            top: 56px; /* Altura del navbar */
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 20px 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background-color: #343a40;
+            width: 250px;
+        }
+
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 56px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .sidebar .nav-link {
+            font-weight: 500;
+            color: #adb5bd;
+            padding: .75rem 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, .1);
+        }
+
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255, 255, 255, .1);
+        }
+
+        .sidebar .nav-link i {
+            margin-right: .5rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: calc(100vh - 56px);
+        }
+
+        @media (max-width: 767.98px) {
+            .sidebar {
+                position: static;
+                height: auto;
+                padding-top: 0;
+                width: 100%;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
 </head>
 <body>
     <?php if (isAuthenticated()): ?>
