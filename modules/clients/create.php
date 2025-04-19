@@ -87,26 +87,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     DROP COLUMN address");
             }
 
-            // Obtener la instancia de PDO
-            $pdo = $db->getPdo();
-            
             // Usar query directamente con valores escapados usando PDO::quote()
             $query = "INSERT INTO clients (id_workshop, name, phone, email, rfc, 
                     street, number, number_int, neighborhood, city, state, zip_code, reference) 
                     VALUES (
                         " . getCurrentWorkshop() . ",
-                        " . $pdo->quote($name) . ",
-                        " . $pdo->quote($phone) . ",
-                        " . $pdo->quote($email) . ",
-                        " . $pdo->quote($rfc) . ",
-                        " . $pdo->quote($street) . ",
-                        " . $pdo->quote($number) . ",
-                        " . $pdo->quote($number_int) . ",
-                        " . $pdo->quote($neighborhood) . ",
-                        " . $pdo->quote($city) . ",
-                        " . $pdo->quote($state) . ",
-                        " . $pdo->quote($zip_code) . ",
-                        " . $pdo->quote($reference) . "
+                        " . $db->quote($name) . ",
+                        " . $db->quote($phone) . ",
+                        " . $db->quote($email) . ",
+                        " . $db->quote($rfc) . ",
+                        " . $db->quote($street) . ",
+                        " . $db->quote($number) . ",
+                        " . $db->quote($number_int) . ",
+                        " . $db->quote($neighborhood) . ",
+                        " . $db->quote($city) . ",
+                        " . $db->quote($state) . ",
+                        " . $db->quote($zip_code) . ",
+                        " . $db->quote($reference) . "
                     )";
             
             $db->query($query);
