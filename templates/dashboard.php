@@ -8,24 +8,26 @@ if (!isAuthenticated()) {
 
 // Obtener estadísticas del taller
 try {
+    $pdo = $db->getConnection();
+    
     // Total de clientes
-    $stmt = $db->prepare("SELECT COUNT(*) as total FROM clients WHERE id_workshop = ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM clients WHERE id_workshop = ?");
     $stmt->execute([getCurrentWorkshop()]);
     $totalClients = $stmt->fetch()['total'];
 
     // Total de vehículos
-    $stmt = $db->prepare("SELECT COUNT(*) as total FROM vehicles WHERE id_workshop = ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM vehicles WHERE id_workshop = ?");
     $stmt->execute([getCurrentWorkshop()]);
     $totalVehicles = $stmt->fetch()['total'];
 
     // Órdenes abiertas
-    $stmt = $db->prepare("SELECT COUNT(*) as total FROM service_orders 
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM service_orders 
                          WHERE id_workshop = ? AND status IN ('open', 'in_progress')");
     $stmt->execute([getCurrentWorkshop()]);
     $openOrders = $stmt->fetch()['total'];
 
     // Ingresos del mes
-    $stmt = $db->prepare("SELECT COALESCE(SUM(total_amount), 0) as total 
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount), 0) as total 
                          FROM service_orders 
                          WHERE id_workshop = ? 
                          AND MONTH(created_at) = MONTH(CURRENT_DATE())
@@ -34,7 +36,7 @@ try {
     $monthlyIncome = $stmt->fetch()['total'];
 
     // Órdenes recientes
-    $stmt = $db->prepare("SELECT so.*, c.name as client_name, v.brand, v.model 
+    $stmt = $pdo->prepare("SELECT so.*, c.name as client_name, v.brand, v.model 
                          FROM service_orders so
                          JOIN clients c ON so.id_client = c.id_client
                          JOIN vehicles v ON so.id_vehicle = v.id_vehicle
