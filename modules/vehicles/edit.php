@@ -102,7 +102,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $db->query($sql);
 
-            showMessage('Vehículo actualizado correctamente', 'success');
+            $_SESSION['alert'] = [
+                'type' => 'success',
+                'message' => 'Vehículo actualizado correctamente'
+            ];
             redirect('view.php?id=' . $id);
 
         } catch (PDOException $e) {
