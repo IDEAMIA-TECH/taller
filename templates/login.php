@@ -1,9 +1,4 @@
 <?php
-// Iniciar sesión si no está iniciada
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 require_once '../includes/config.php';
 
 // Array para almacenar los logs
@@ -15,7 +10,7 @@ $logs[] = "Configuración de base de datos:";
 $logs[] = "- DB_HOST: " . DB_HOST;
 $logs[] = "- DB_NAME: " . DB_NAME;
 $logs[] = "- DB_USER: " . DB_USER;
-$logs[] = "Estado de la sesión: " . (isset($_SESSION) ? "Iniciada" : "No iniciada");
+$logs[] = "Estado de la sesión: " . (session_status() === PHP_SESSION_ACTIVE ? "Activa" : "Inactiva");
 $logs[] = "Datos de sesión: " . print_r($_SESSION, true);
 $logs[] = "Usuario autenticado: " . (isAuthenticated() ? "Sí" : "No");
 
@@ -96,18 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $logs[] = "- username: " . $user['username'];
         $logs[] = "- role: " . $user['role'];
         $logs[] = "- id_workshop: " . $user['id_workshop'];
-
-        // Iniciar sesión
-        $_SESSION['id_user'] = $user['id_user'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['full_name'] = $user['full_name'];
-        $_SESSION['email'] = $user['email'];
-        $_SESSION['role'] = $user['role'];
-        $_SESSION['id_workshop'] = $user['id_workshop'];
-        $_SESSION['workshop_name'] = $user['workshop_name'];
-
-        $logs[] = "Sesión iniciada correctamente";
-        $logs[] = "Nuevo estado de sesión: " . print_r($_SESSION, true);
 
         // Actualizar último login
         $logs[] = "Actualizando último login...";

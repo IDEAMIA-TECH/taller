@@ -21,10 +21,12 @@ define('UPLOADS_PATH', APP_URL . '/uploads');
 define('INVOICES_PATH', APP_URL . '/storage/invoices');
 
 // Configuración de sesión
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-ini_set('session.cookie_secure', 1);
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_secure', 1);
+    session_start();
+}
 
 // Inicializar la conexión a la base de datos
 require_once __DIR__ . '/database.php';
