@@ -191,7 +191,7 @@ $logs[] = "Header incluido correctamente";
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?php echo APP_URL; ?>/modules/orders/">
+                        <a class="nav-link" href="<?php echo APP_URL; ?>/modules/service_orders/">
                             <i class="fas fa-clipboard-list"></i> Órdenes
                         </a>
                     </li>
@@ -242,8 +242,8 @@ $logs[] = "Header incluido correctamente";
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="<?php echo APP_URL; ?>/modules/orders/create.php">
-                                    <i class="fas fa-clipboard-list"></i> Orden de Servicio
+                                <a class="dropdown-item" href="<?php echo APP_URL; ?>/modules/service_orders/create.php">
+                                    <i class="fas fa-plus"></i> Nueva Orden
                                 </a>
                             </li>
                         </ul>
@@ -300,8 +300,8 @@ $logs[] = "Header incluido correctamente";
                                     <h2 class="card-text"><?php echo $openOrders; ?></h2>
                                 </div>
                                 <?php if (hasRole('admin') || hasRole('receptionist')): ?>
-                                <a href="<?php echo APP_URL; ?>/modules/orders/create.php" class="btn btn-light btn-sm">
-                                    <i class="fas fa-plus"></i>
+                                <a href="<?php echo APP_URL; ?>/modules/service_orders/create.php" class="btn btn-light btn-sm">
+                                    <i class="fas fa-plus"></i> Nueva Orden
                                 </a>
                                 <?php endif; ?>
                             </div>
@@ -366,7 +366,7 @@ $logs[] = "Header incluido correctamente";
                                     <td><?php echo date('d/m/Y', strtotime($order['created_at'])); ?></td>
                                     <td>$<?php echo number_format($order['total_amount'], 2); ?></td>
                                     <td>
-                                        <a href="<?php echo APP_URL; ?>/modules/orders/view.php?id=<?php echo $order['id_order']; ?>" 
+                                        <a href="<?php echo APP_URL; ?>/modules/service_orders/view.php?id=<?php echo $order['id_order']; ?>" 
                                            class="btn btn-sm btn-primary">
                                             <i class="fas fa-eye"></i>
                                         </a>

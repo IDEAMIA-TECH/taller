@@ -168,7 +168,7 @@ include '../../includes/header.php';
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?php echo APP_URL; ?>/modules/orders/">
+                        <a class="nav-link" href="<?php echo APP_URL; ?>/modules/service_orders/">
                             <i class="fas fa-clipboard-list"></i> Órdenes
                         </a>
                     </li>
