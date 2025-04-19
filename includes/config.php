@@ -81,14 +81,7 @@ function getMessage() {
 }
 
 function getCurrentWorkshop() {
-    if (isset($_SESSION['workshop_id'])) {
-        $db = Database::getInstance();
-        return $db->fetch(
-            "SELECT * FROM workshops WHERE id_workshop = ?",
-            [$_SESSION['workshop_id']]
-        );
-    }
-    return null;
+    return isset($_SESSION['id_workshop']) ? $_SESSION['id_workshop'] : null;
 }
 
 function getCurrentUser() {
