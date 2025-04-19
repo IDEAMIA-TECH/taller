@@ -28,19 +28,15 @@ try {
               SUM(od.quantity) as total_quantity
               FROM services s
               LEFT JOIN order_details od ON s.id_service = od.id_service
-              WHERE s.id_workshop = ?";
-    $params = [getCurrentWorkshop()];
+              WHERE s.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
 
     // Agregar filtros
     if (!empty($search)) {
-        $query .= " AND (s.name LIKE ? OR s.description LIKE ?)";
-        $params[] = "%$search%";
-        $params[] = "%$search%";
+        $query .= " AND (s.name LIKE '%" . addslashes($search) . "%' OR s.description LIKE '%" . addslashes($search) . "%')";
     }
 
     if ($status !== 'all') {
-        $query .= " AND s.status = ?";
-        $params[] = $status;
+        $query .= " AND s.status = '" . addslashes($status) . "'";
     }
 
     // Agregar agrupación y ordenamiento
@@ -48,22 +44,19 @@ try {
 
     // Obtener total de registros
     $countQuery = "SELECT COUNT(*) as total FROM ($query) as count_query";
-    $stmt = $db->prepare($countQuery);
-    $stmt->execute($params);
-    $total = $stmt->fetch()['total'];
+    $result = $db->query($countQuery);
+    $total = $result->fetch()['total'];
     $totalPages = ceil($total / $limit);
 
     // Agregar límite y offset
-    $query .= " LIMIT ? OFFSET ?";
-    $params[] = $limit;
-    $params[] = $offset;
+    $query .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
 
     // Ejecutar consulta
-    $stmt = $db->prepare($query);
-    $stmt->execute($params);
-    $services = $stmt->fetchAll();
+    $result = $db->query($query);
+    $services = $result->fetchAll();
 
 } catch (PDOException $e) {
+    error_log("Error en services/index.php: " . $e->getMessage());
     showError('Error al cargar los servicios');
     $services = [];
     $totalPages = 0;
