@@ -24,17 +24,17 @@ try {
     $query = "SELECT v.*, c.name as client_name 
               FROM vehicles v 
               JOIN clients c ON v.id_client = c.id_client 
-              WHERE v.id_workshop = " . $db->quote(getCurrentWorkshop());
+              WHERE v.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
 
     // Agregar filtro por cliente si existe
     if ($client_id > 0) {
-        $query .= " AND v.id_client = " . $db->quote($client_id);
+        $query .= " AND v.id_client = '" . addslashes($client_id) . "'";
     }
 
     // Agregar búsqueda si existe
     if (!empty($search)) {
-        $searchParam = $db->quote("%$search%");
-        $query .= " AND (v.brand LIKE $searchParam OR v.model LIKE $searchParam OR v.plates LIKE $searchParam OR c.name LIKE $searchParam)";
+        $searchParam = addslashes("%$search%");
+        $query .= " AND (v.brand LIKE '$searchParam' OR v.model LIKE '$searchParam' OR v.plates LIKE '$searchParam' OR c.name LIKE '$searchParam')";
     }
 
     // Agregar orden y límite
@@ -48,15 +48,15 @@ try {
     $countQuery = "SELECT COUNT(*) as total 
                    FROM vehicles v 
                    JOIN clients c ON v.id_client = c.id_client 
-                   WHERE v.id_workshop = " . $db->quote(getCurrentWorkshop());
+                   WHERE v.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
 
     if ($client_id > 0) {
-        $countQuery .= " AND v.id_client = " . $db->quote($client_id);
+        $countQuery .= " AND v.id_client = '" . addslashes($client_id) . "'";
     }
 
     if (!empty($search)) {
-        $searchParam = $db->quote("%$search%");
-        $countQuery .= " AND (v.brand LIKE $searchParam OR v.model LIKE $searchParam OR v.plates LIKE $searchParam OR c.name LIKE $searchParam)";
+        $searchParam = addslashes("%$search%");
+        $countQuery .= " AND (v.brand LIKE '$searchParam' OR v.model LIKE '$searchParam' OR v.plates LIKE '$searchParam' OR c.name LIKE '$searchParam')";
     }
 
     $result = $db->query($countQuery);
