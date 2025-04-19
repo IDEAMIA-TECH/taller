@@ -21,12 +21,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $email = trim($_POST['email'] ?? '');
-    $address = trim($_POST['address'] ?? '');
     $rfc = trim($_POST['rfc'] ?? '');
+
+    // Campos de dirección
+    $street = trim($_POST['street'] ?? '');
+    $number = trim($_POST['number'] ?? '');
+    $number_int = trim($_POST['number_int'] ?? '');
+    $neighborhood = trim($_POST['neighborhood'] ?? '');
+    $city = trim($_POST['city'] ?? '');
+    $state = trim($_POST['state'] ?? '');
+    $zip_code = trim($_POST['zip_code'] ?? '');
+    $reference = trim($_POST['reference'] ?? '');
 
     // Validaciones
     if (empty($name)) {
         $errors[] = 'El nombre es requerido';
+    }
+
+    if (empty($street)) {
+        $errors[] = 'La calle es requerida';
+    }
+
+    if (empty($neighborhood)) {
+        $errors[] = 'La colonia es requerida';
+    }
+
+    if (empty($city)) {
+        $errors[] = 'La ciudad es requerida';
+    }
+
+    if (empty($state)) {
+        $errors[] = 'El estado es requerido';
+    }
+
+    if (empty($zip_code)) {
+        $errors[] = 'El código postal es requerido';
+    } elseif (!preg_match('/^[0-9]{5}$/', $zip_code)) {
+        $errors[] = 'El código postal debe tener 5 dígitos';
     }
 
     if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -40,15 +71,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Si no hay errores, guardar el cliente
     if (empty($errors)) {
         try {
-            $stmt = $db->prepare("INSERT INTO clients (id_workshop, name, phone, email, address, rfc) 
-                                VALUES (?, ?, ?, ?, ?, ?)");
+            // Verificar si la tabla necesita ser actualizada
+            $checkTable = $db->query("SHOW COLUMNS FROM clients LIKE 'street'");
+            if ($checkTable->rowCount() == 0) {
+                // Actualizar la tabla para incluir los nuevos campos
+                $db->exec("ALTER TABLE clients 
+                    ADD COLUMN street VARCHAR(255) NOT NULL AFTER rfc,
+                    ADD COLUMN number VARCHAR(20) AFTER street,
+                    ADD COLUMN number_int VARCHAR(20) AFTER number,
+                    ADD COLUMN neighborhood VARCHAR(255) NOT NULL AFTER number_int,
+                    ADD COLUMN city VARCHAR(255) NOT NULL AFTER neighborhood,
+                    ADD COLUMN state VARCHAR(255) NOT NULL AFTER city,
+                    ADD COLUMN zip_code VARCHAR(5) NOT NULL AFTER state,
+                    ADD COLUMN reference TEXT AFTER zip_code,
+                    DROP COLUMN address");
+            }
+
+            $stmt = $db->prepare("INSERT INTO clients (id_workshop, name, phone, email, rfc, 
+                                street, number, number_int, neighborhood, city, state, zip_code, reference) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 getCurrentWorkshop(),
                 $name,
                 $phone,
                 $email,
-                $address,
-                $rfc
+                $rfc,
+                $street,
+                $number,
+                $number_int,
+                $neighborhood,
+                $city,
+                $state,
+                $zip_code,
+                $reference
             ]);
 
             $success = true;
@@ -232,10 +287,63 @@ include '../../includes/header.php';
                             </div>
 
                             <div class="col-12">
-                                <label for="address" class="form-label">Dirección</label>
-                                <textarea class="form-control" id="address" name="address" rows="3"><?php 
-                                    echo isset($_POST['address']) ? htmlspecialchars($_POST['address']) : ''; 
-                                ?></textarea>
+                                <h5 class="mb-3">Dirección</h5>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="street" class="form-label">Calle *</label>
+                                <input type="text" class="form-control" id="street" name="street" 
+                                       value="<?php echo isset($_POST['street']) ? htmlspecialchars($_POST['street']) : ''; ?>" 
+                                       required>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label for="number" class="form-label">Número Exterior</label>
+                                <input type="text" class="form-control" id="number" name="number" 
+                                       value="<?php echo isset($_POST['number']) ? htmlspecialchars($_POST['number']) : ''; ?>">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label for="number_int" class="form-label">Número Interior</label>
+                                <input type="text" class="form-control" id="number_int" name="number_int" 
+                                       value="<?php echo isset($_POST['number_int']) ? htmlspecialchars($_POST['number_int']) : ''; ?>">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="neighborhood" class="form-label">Colonia *</label>
+                                <input type="text" class="form-control" id="neighborhood" name="neighborhood" 
+                                       value="<?php echo isset($_POST['neighborhood']) ? htmlspecialchars($_POST['neighborhood']) : ''; ?>" 
+                                       required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="city" class="form-label">Ciudad *</label>
+                                <input type="text" class="form-control" id="city" name="city" 
+                                       value="<?php echo isset($_POST['city']) ? htmlspecialchars($_POST['city']) : ''; ?>" 
+                                       required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="state" class="form-label">Estado *</label>
+                                <input type="text" class="form-control" id="state" name="state" 
+                                       value="<?php echo isset($_POST['state']) ? htmlspecialchars($_POST['state']) : ''; ?>" 
+                                       required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="zip_code" class="form-label">Código Postal *</label>
+                                <input type="text" class="form-control" id="zip_code" name="zip_code" 
+                                       value="<?php echo isset($_POST['zip_code']) ? htmlspecialchars($_POST['zip_code']) : ''; ?>" 
+                                       pattern="[0-9]{5}" 
+                                       title="El código postal debe tener 5 dígitos"
+                                       required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="reference" class="form-label">Referencias</label>
+                                <input type="text" class="form-control" id="reference" name="reference" 
+                                       value="<?php echo isset($_POST['reference']) ? htmlspecialchars($_POST['reference']) : ''; ?>"
+                                       placeholder="Entre calles, puntos de referencia, etc.">
                             </div>
 
                             <div class="col-12">
