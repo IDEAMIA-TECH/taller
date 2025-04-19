@@ -24,10 +24,15 @@ if ($id <= 0) {
 }
 
 try {
-    // Obtener datos del vehículo
-    $stmt = $db->prepare("SELECT * FROM vehicles WHERE id_vehicle = ? AND id_workshop = ?");
-    $stmt->execute([$id, getCurrentWorkshop()]);
-    $vehicle = $stmt->fetch();
+    // Obtener información del vehículo
+    $query = "SELECT v.*, c.name as client_name, c.phone as client_phone, c.email as client_email
+              FROM vehicles v 
+              JOIN clients c ON v.id_client = c.id_client 
+              WHERE v.id_vehicle = '" . addslashes($id) . "' 
+              AND v.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
+    
+    $result = $db->query($query);
+    $vehicle = $result->fetch(PDO::FETCH_ASSOC);
 
     if (!$vehicle) {
         showError('Vehículo no encontrado');
@@ -35,12 +40,15 @@ try {
     }
 
     // Obtener lista de clientes para el select
-    $stmt = $db->prepare("SELECT id_client, name FROM clients WHERE id_workshop = ? ORDER BY name");
-    $stmt->execute([getCurrentWorkshop()]);
-    $clients = $stmt->fetchAll();
+    $clientsQuery = "SELECT id_client, name FROM clients 
+                    WHERE id_workshop = '" . addslashes(getCurrentWorkshop()) . "' 
+                    ORDER BY name";
+    $result = $db->query($clientsQuery);
+    $clients = $result->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
-    showError('Error al cargar los datos del vehículo');
+    error_log("Error en edit.php: " . $e->getMessage());
+    showError('Error al cargar la información del vehículo. Por favor, intente más tarde.');
     redirect('index.php');
 }
 
