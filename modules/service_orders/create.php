@@ -18,33 +18,53 @@ $success = false;
 // Obtener datos necesarios para el formulario
 try {
     // Obtener lista de clientes
-    $stmt = $db->prepare("SELECT id_client, name FROM clients WHERE id_workshop = ? ORDER BY name");
-    $stmt->execute([getCurrentWorkshop()]);
-    $clients = $stmt->fetchAll();
+    $sql = "SELECT id_client, name FROM clients 
+            WHERE id_workshop = '" . addslashes(getCurrentWorkshop()) . "' 
+            ORDER BY name ASC";
+    $result = $db->query($sql);
+    $clients = $result->fetchAll();
+
+    // Obtener lista de vehículos
+    $sql = "SELECT v.id_vehicle, v.brand, v.model, v.plates, c.name as client_name 
+            FROM vehicles v 
+            JOIN clients c ON v.id_client = c.id_client 
+            WHERE v.id_workshop = '" . addslashes(getCurrentWorkshop()) . "' 
+            ORDER BY c.name ASC, v.brand ASC, v.model ASC";
+    $result = $db->query($sql);
+    $vehicles = $result->fetchAll();
+
+    // Obtener lista de servicios
+    $sql = "SELECT id_service, name, price, duration 
+            FROM services 
+            WHERE id_workshop = '" . addslashes(getCurrentWorkshop()) . "' 
+            AND status = 'active' 
+            ORDER BY name ASC";
+    $result = $db->query($sql);
+    $services = $result->fetchAll();
 
     // Obtener lista de mecánicos
-    $stmt = $db->prepare("SELECT id_user, full_name FROM users WHERE id_workshop = ? AND role = 'mechanic' AND status = 'active' ORDER BY full_name");
-    $stmt->execute([getCurrentWorkshop()]);
-    $mechanics = $stmt->fetchAll();
-
-    // Obtener lista de servicios activos
-    $stmt = $db->prepare("SELECT id_service, name, price, duration FROM services WHERE id_workshop = ? AND status = 'active' ORDER BY name");
-    $stmt->execute([getCurrentWorkshop()]);
-    $services = $stmt->fetchAll();
+    $sql = "SELECT id_user, full_name 
+            FROM users 
+            WHERE id_workshop = '" . addslashes(getCurrentWorkshop()) . "' 
+            AND role = 'mechanic' 
+            AND status = 'active' 
+            ORDER BY full_name ASC";
+    $result = $db->query($sql);
+    $mechanics = $result->fetchAll();
 
 } catch (PDOException $e) {
-    showError('Error al cargar los datos del formulario');
+    showError('Error al cargar los datos necesarios. Por favor, intente más tarde.');
     redirect('index.php');
 }
 
 // Procesar el formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Obtener y validar datos
+    // Validar y obtener datos
     $id_client = isset($_POST['id_client']) ? (int)$_POST['id_client'] : 0;
     $id_vehicle = isset($_POST['id_vehicle']) ? (int)$_POST['id_vehicle'] : 0;
     $id_user_assigned = isset($_POST['id_user_assigned']) ? (int)$_POST['id_user_assigned'] : null;
-    $notes = trim($_POST['notes'] ?? '');
-    $services_data = isset($_POST['services']) ? $_POST['services'] : [];
+    $notes = isset($_POST['notes']) ? trim($_POST['notes']) : '';
+    $selected_services = isset($_POST['services']) ? $_POST['services'] : [];
 
     // Validaciones
     if (!$id_client) {
@@ -55,68 +75,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Debe seleccionar un vehículo';
     }
 
-    if (empty($services_data)) {
-        $errors[] = 'Debe agregar al menos un servicio';
+    if (empty($selected_services)) {
+        $errors[] = 'Debe seleccionar al menos un servicio';
     }
 
     // Si no hay errores, crear la orden
     if (empty($errors)) {
         try {
-            // Iniciar transacción
-            $db->beginTransaction();
-
             // Generar número de orden
-            $order_number = generateOrderNumber();
+            $order_number = date('Ymd') . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
 
             // Insertar orden
-            $stmt = $db->prepare("
-                INSERT INTO service_orders (
-                    id_workshop, id_client, id_vehicle, id_user_created, 
-                    id_user_assigned, order_number, status, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, 'open', ?)
-            ");
-            $stmt->execute([
-                getCurrentWorkshop(),
-                $id_client,
-                $id_vehicle,
-                getCurrentUserId(),
-                $id_user_assigned,
-                $order_number,
-                $notes
-            ]);
-
+            $sql = "INSERT INTO service_orders (
+                        id_workshop, id_client, id_vehicle, id_user_created, 
+                        id_user_assigned, order_number, notes
+                    ) VALUES (
+                        '" . addslashes(getCurrentWorkshop()) . "',
+                        '" . addslashes($id_client) . "',
+                        '" . addslashes($id_vehicle) . "',
+                        '" . addslashes($_SESSION['id_user']) . "',
+                        " . ($id_user_assigned ? "'" . addslashes($id_user_assigned) . "'" : "NULL") . ",
+                        '" . addslashes($order_number) . "',
+                        '" . addslashes($notes) . "'
+                    )";
+            $db->query($sql);
             $id_order = $db->lastInsertId();
 
             // Insertar detalles de servicios
-            $stmt = $db->prepare("
-                INSERT INTO order_details (
-                    id_order, id_service, quantity, unit_price, subtotal
-                ) VALUES (?, ?, ?, ?, ?)
-            ");
-
-            foreach ($services_data as $service) {
-                $quantity = (int)$service['quantity'];
-                $unit_price = (float)$service['price'];
-                $subtotal = $quantity * $unit_price;
-
-                $stmt->execute([
-                    $id_order,
-                    $service['id'],
-                    $quantity,
-                    $unit_price,
-                    $subtotal
-                ]);
+            foreach ($selected_services as $service_id) {
+                $sql = "INSERT INTO order_details (
+                            id_order, id_service, quantity, unit_price, subtotal
+                        ) VALUES (
+                            '" . addslashes($id_order) . "',
+                            '" . addslashes($service_id) . "',
+                            1,
+                            (SELECT price FROM services WHERE id_service = '" . addslashes($service_id) . "'),
+                            (SELECT price FROM services WHERE id_service = '" . addslashes($service_id) . "')
+                        )";
+                $db->query($sql);
             }
 
-            // Confirmar transacción
-            $db->commit();
-            $success = true;
-            showSuccess('Orden de servicio creada correctamente');
-            redirect('view.php?id=' . $id_order);
+            $_SESSION['success_message'] = 'Orden de servicio creada correctamente';
+            redirect(APP_URL . '/modules/service_orders/view.php?id=' . $id_order);
 
         } catch (PDOException $e) {
-            // Revertir transacción en caso de error
-            $db->rollBack();
             $errors[] = 'Error al crear la orden de servicio. Por favor, intente más tarde.';
         }
     }
