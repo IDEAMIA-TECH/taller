@@ -88,27 +88,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Si no hay errores, actualizar el vehículo
     if (empty($errors)) {
         try {
-            $stmt = $db->prepare("UPDATE vehicles 
-                                SET id_client = ?, brand = ?, model = ?, year = ?, 
-                                    color = ?, plates = ?, vin = ?, last_mileage = ? 
-                                WHERE id_vehicle = ? AND id_workshop = ?");
-            $stmt->execute([
-                $id_client,
-                $brand,
-                $model,
-                $year,
-                $color,
-                $plates,
-                $vin,
-                $last_mileage,
-                $id,
-                getCurrentWorkshop()
-            ]);
+            $sql = "UPDATE vehicles 
+                    SET id_client = " . $db->quote($id_client) . ",
+                        brand = " . $db->quote($brand) . ",
+                        model = " . $db->quote($model) . ",
+                        year = " . $db->quote($year) . ",
+                        color = " . $db->quote($color) . ",
+                        plates = " . $db->quote($plates) . ",
+                        vin = " . $db->quote($vin) . ",
+                        last_mileage = " . ($last_mileage !== null ? $db->quote($last_mileage) : "NULL") . "
+                    WHERE id_vehicle = " . $db->quote($id) . " 
+                    AND id_workshop = " . $db->quote(getCurrentWorkshop());
+
+            $db->query($sql);
 
             showSuccess('Vehículo actualizado correctamente');
             redirect('view.php?id=' . $id);
 
         } catch (PDOException $e) {
+            error_log("Error en edit.php: " . $e->getMessage());
             $errors[] = 'Error al actualizar el vehículo. Por favor, intente más tarde.';
         }
     }
