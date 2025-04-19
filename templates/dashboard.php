@@ -1,15 +1,30 @@
 <?php
 require_once '../includes/config.php';
 
+// Array para almacenar los logs
+$logs = [];
+$logs[] = "=== Inicio del proceso de dashboard ===";
+$logs[] = "URL actual: " . $_SERVER['REQUEST_URI'];
+$logs[] = "Método de solicitud: " . $_SERVER['REQUEST_METHOD'];
+$logs[] = "Estado de la sesión: " . (session_status() === PHP_SESSION_ACTIVE ? "Activa" : "Inactiva");
+$logs[] = "Datos de sesión: " . print_r($_SESSION, true);
+
 // Verificar autenticación
 if (!isAuthenticated()) {
+    $logs[] = "Usuario no autenticado, redirigiendo a login";
     redirect('login.php');
 }
 
+$logs[] = "Usuario autenticado: " . $_SESSION['username'];
+$logs[] = "Rol del usuario: " . $_SESSION['role'];
+$logs[] = "ID del taller: " . $_SESSION['id_workshop'];
+
 // Obtener estadísticas del taller
 try {
+    $logs[] = "Intentando conectar a la base de datos...";
     $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $logs[] = "Conexión a la base de datos exitosa";
     
     // Total de clientes
     $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM clients WHERE id_workshop = ?");
@@ -48,11 +63,34 @@ try {
     $recentOrders = $stmt->fetchAll();
 
 } catch (PDOException $e) {
+    $logs[] = "Error de conexión a la base de datos: " . $e->getMessage();
     showError('Error al cargar el dashboard. Por favor, intente más tarde.');
 }
 
+// Guardar logs en un archivo
+$logDir = __DIR__ . '/../logs';
+if (!file_exists($logDir)) {
+    if (!mkdir($logDir, 0755, true)) {
+        $logs[] = "Error: No se pudo crear el directorio de logs";
+    }
+}
+
+$logFile = $logDir . '/dashboard_' . date('Y-m-d') . '.log';
+if (is_writable($logDir)) {
+    if (!file_put_contents($logFile, implode("\n", $logs) . "\n\n", FILE_APPEND)) {
+        $logs[] = "Error: No se pudo escribir en el archivo de log";
+    }
+} else {
+    $logs[] = "Error: El directorio de logs no tiene permisos de escritura";
+}
+
+// Mostrar logs en la consola del navegador
+echo "<script>console.log('Logs de dashboard:', " . json_encode($logs) . ");</script>";
+
 // Incluir el header
+$logs[] = "Incluyendo header.php";
 include '../includes/header.php';
+$logs[] = "Header incluido correctamente";
 ?>
 
 <style>
@@ -65,6 +103,7 @@ include '../includes/header.php';
     padding: 48px 0 0;
     box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
     background-color: #343a40;
+    width: 240px;
 }
 
 .sidebar-sticky {
@@ -106,6 +145,7 @@ include '../includes/header.php';
         position: static;
         height: auto;
         padding-top: 0;
+        width: 100%;
     }
     .main-content {
         margin-left: 0;
@@ -124,7 +164,11 @@ include '../includes/header.php';
                             <i class="fas fa-home"></i> Dashboard
                         </a>
                     </li>
-                    <?php if (hasRole('admin') || hasRole('receptionist')): ?>
+                    <?php 
+                    $logs[] = "Verificando roles para mostrar menú";
+                    if (hasRole('admin') || hasRole('receptionist')): 
+                        $logs[] = "Mostrando opciones para admin/recepcionista";
+                    ?>
                     <li class="nav-item">
                         <a class="nav-link" href="<?php echo APP_URL; ?>/modules/clients/">
                             <i class="fas fa-users"></i> Clientes
@@ -145,8 +189,11 @@ include '../includes/header.php';
                             <i class="fas fa-clipboard-list"></i> Órdenes
                         </a>
                     </li>
-                    <?php endif; ?>
-                    <?php if (hasRole('admin')): ?>
+                    <?php 
+                    endif; 
+                    if (hasRole('admin')): 
+                        $logs[] = "Mostrando opciones solo para admin";
+                    ?>
                     <li class="nav-item">
                         <a class="nav-link" href="<?php echo APP_URL; ?>/modules/reports/">
                             <i class="fas fa-chart-bar"></i> Reportes
@@ -330,6 +377,7 @@ include '../includes/header.php';
 </div>
 
 <?php
-// Incluir el footer
+$logs[] = "Incluyendo footer.php";
 include '../includes/footer.php';
+$logs[] = "Footer incluido correctamente";
 ?>
