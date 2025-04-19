@@ -145,7 +145,7 @@ function checkRole($requiredRole) {
     if (!isAuthenticated()) {
         return false;
     }
-    return $_SESSION['user_role'] === $requiredRole;
+    return isset($_SESSION['role']) && $_SESSION['role'] === $requiredRole;
 }
 
 // Función para obtener el nombre del usuario actual
@@ -155,7 +155,7 @@ function getCurrentUserName() {
     }
     
     global $db;
-    $userId = $_SESSION['user_id'];
+    $userId = $_SESSION['id_user'];
     
     $result = $db->fetch(
         "SELECT full_name FROM users WHERE id_user = ?",
