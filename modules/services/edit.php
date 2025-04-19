@@ -24,9 +24,9 @@ if (!$id_service) {
 
 // Obtener datos del servicio
 try {
-    $stmt = $db->prepare("SELECT * FROM services WHERE id_service = ? AND id_workshop = ?");
-    $stmt->execute([$id_service, getCurrentWorkshop()]);
-    $service = $stmt->fetch();
+    $sql = "SELECT * FROM services WHERE id_service = '" . addslashes($id_service) . "' AND id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
+    $result = $db->query($sql);
+    $service = $result->fetch(PDO::FETCH_ASSOC);
 
     if (!$service) {
         showError('Servicio no encontrado');
@@ -74,22 +74,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Si no hay errores, actualizar el servicio
     if (empty($errors)) {
         try {
-            $stmt = $db->prepare("UPDATE services SET 
-                                name = ?, 
-                                description = ?, 
-                                price = ?, 
-                                duration = ?, 
-                                status = ? 
-                                WHERE id_service = ? AND id_workshop = ?");
-            $stmt->execute([
-                $name,
-                $description,
-                $price,
-                $duration,
-                $status,
-                $id_service,
-                getCurrentWorkshop()
-            ]);
+            $sql = "UPDATE services SET 
+                    name = '" . addslashes($name) . "', 
+                    description = '" . addslashes($description) . "', 
+                    price = '" . addslashes($price) . "', 
+                    duration = '" . addslashes($duration) . "', 
+                    status = '" . addslashes($status) . "' 
+                    WHERE id_service = '" . addslashes($id_service) . "' 
+                    AND id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
+            
+            $db->query($sql);
 
             $success = true;
             showSuccess('Servicio actualizado correctamente');
