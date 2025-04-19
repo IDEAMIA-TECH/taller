@@ -99,8 +99,24 @@ function getCurrentUser() {
 }
 
 function isWorkshopActive() {
-    $workshop = getCurrentWorkshop();
-    return $workshop && $workshop['subscription_status'] === 'active';
+    $workshopId = getCurrentWorkshop();
+    if (!$workshopId) {
+        return false;
+    }
+    
+    try {
+        $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+        $stmt = $pdo->prepare("SELECT subscription_status FROM workshops WHERE id_workshop = ?");
+        $stmt->execute([$workshopId]);
+        $result = $stmt->fetch();
+        
+        return $result && $result['subscription_status'] === 'active';
+    } catch (PDOException $e) {
+        error_log("Error al verificar estado del taller: " . $e->getMessage());
+        return false;
+    }
 }
 
 function getResourcePath($type) {

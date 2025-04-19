@@ -13,8 +13,8 @@ if (!hasRole('admin') && !hasRole('receptionist') && !hasRole('super_admin')) {
 
 // Verificar si el taller está activo
 if (!isWorkshopActive()) {
-    showError('El taller no está activo. Por favor, contacte al administrador.');
-    redirect('templates/dashboard.php');
+    $_SESSION['error'] = 'El taller no está activo. Por favor, contacte al administrador.';
+    redirect('dashboard.php');
 }
 
 // Procesar búsqueda y filtros
