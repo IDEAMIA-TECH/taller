@@ -91,76 +91,123 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include '../../includes/header.php';
 ?>
 
-<div class="container">
-    <div class="row justify-content-center mt-5">
-        <div class="col-md-6 col-lg-4">
-            <div class="card shadow">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - <?php echo APP_NAME; ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8f9fa;
+        }
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background: none;
+            border: none;
+            text-align: center;
+            padding: 30px 0 0;
+        }
+        .card-body {
+            padding: 30px;
+        }
+        .form-control {
+            padding: 12px;
+            border-radius: 5px;
+        }
+        .btn-primary {
+            padding: 12px;
+            border-radius: 5px;
+        }
+        .logo {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-container">
+            <div class="card">
+                <div class="card-header">
+                    <img src="<?php echo ASSETS_URL; ?>/img/logo.png" alt="<?php echo APP_NAME; ?>" class="logo">
+                    <h4 class="mb-4">Iniciar Sesión</h4>
+                </div>
                 <div class="card-body">
-                    <div class="text-center mb-4">
-                        <img src="<?php echo ASSETS_URL; ?>/img/logo.png" alt="Logo" class="img-fluid mb-3" style="max-height: 100px;">
-                        <h4 class="card-title">Iniciar Sesión</h4>
-                    </div>
-
                     <?php if ($error): ?>
                         <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                     <?php endif; ?>
 
-                    <form method="POST" action="" id="loginForm" onsubmit="return handleSubmit(event)">
+                    <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" id="loginForm">
                         <div class="mb-3">
                             <label for="username" class="form-label">Usuario</label>
-                            <input type="text" class="form-control" id="username" name="username" required 
-                                   value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input type="text" class="form-control" id="username" name="username" required 
+                                       value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
+                            </div>
                         </div>
-
                         <div class="mb-3">
                             <label for="password" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
                         </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary" id="loginButton">Ingresar</button>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">Recordarme</label>
                         </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                        </button>
                     </form>
-
-                    <div class="text-center mt-3">
-                        <a href="forgot_password.php">¿Olvidó su contraseña?</a>
-                    </div>
                 </div>
+                <div class="card-footer text-center">
+                    <a href="<?php echo APP_URL; ?>/forgot-password" class="text-muted">¿Olvidaste tu contraseña?</a>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <a href="<?php echo APP_URL; ?>" class="text-muted">
+                    <i class="fas fa-arrow-left"></i> Volver al inicio
+                </a>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-// Función para manejar el envío del formulario
-function handleSubmit(event) {
-    console.log('Formulario enviado');
-    alert('Formulario enviado'); // Alerta para verificar que el JavaScript funciona
-    
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    
-    if (!username || !password) {
-        console.error('Error: Campos vacíos');
-        alert('Por favor complete todos los campos');
-        event.preventDefault();
-        return false;
-    }
-    
-    console.log('Enviando formulario...');
-    return true;
-}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Función para manejar el envío del formulario
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            console.log('Formulario enviado');
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                console.error('Error: Campos vacíos');
+                alert('Por favor complete todos los campos');
+                e.preventDefault();
+                return false;
+            }
+            
+            console.log('Enviando formulario...');
+            return true;
+        });
 
-// Agregar listener al botón
-document.getElementById('loginButton').addEventListener('click', function(e) {
-    console.log('Botón clickeado');
-    alert('Botón clickeado'); // Alerta para verificar que el JavaScript funciona
-});
-
-// Mostrar logs iniciales
-const logs = <?php echo json_encode($logs); ?>;
-console.log('Logs iniciales:', logs);
-alert('Script cargado'); // Alerta para verificar que el JavaScript se carga
-</script>
-
-<?php include '../../includes/footer.php'; ?> 
+        // Mostrar logs iniciales
+        const logs = <?php echo json_encode($logs); ?>;
+        console.log('Logs iniciales:', logs);
+    </script>
+</body>
+</html> 
