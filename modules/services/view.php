@@ -21,9 +21,9 @@ if (!$id_service) {
 
 try {
     // Obtener datos del servicio
-    $stmt = $db->prepare("SELECT * FROM services WHERE id_service = ? AND id_workshop = ?");
-    $stmt->execute([$id_service, getCurrentWorkshop()]);
-    $service = $stmt->fetch();
+    $sql = "SELECT * FROM services WHERE id_service = '" . addslashes($id_service) . "' AND id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
+    $result = $db->query($sql);
+    $service = $result->fetch(PDO::FETCH_ASSOC);
 
     if (!$service) {
         showError('Servicio no encontrado');
@@ -31,7 +31,7 @@ try {
     }
 
     // Obtener estadísticas de uso
-    $stmt = $db->prepare("
+    $sql = "
         SELECT 
             COUNT(od.id_detail) as total_orders,
             SUM(od.quantity) as total_quantity,
@@ -39,13 +39,13 @@ try {
             AVG(od.unit_price) as average_price
         FROM order_details od
         JOIN service_orders so ON od.id_order = so.id_order
-        WHERE od.id_service = ? AND so.id_workshop = ?
-    ");
-    $stmt->execute([$id_service, getCurrentWorkshop()]);
-    $stats = $stmt->fetch();
+        WHERE od.id_service = '" . addslashes($id_service) . "' AND so.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'
+    ";
+    $result = $db->query($sql);
+    $stats = $result->fetch(PDO::FETCH_ASSOC);
 
     // Obtener últimas órdenes donde se usó el servicio
-    $stmt = $db->prepare("
+    $sql = "
         SELECT 
             so.order_number,
             so.created_at,
@@ -61,12 +61,12 @@ try {
         JOIN service_orders so ON od.id_order = so.id_order
         JOIN vehicles v ON so.id_vehicle = v.id_vehicle
         JOIN clients c ON so.id_client = c.id_client
-        WHERE od.id_service = ? AND so.id_workshop = ?
+        WHERE od.id_service = '" . addslashes($id_service) . "' AND so.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'
         ORDER BY so.created_at DESC
         LIMIT 10
-    ");
-    $stmt->execute([$id_service, getCurrentWorkshop()]);
-    $orders = $stmt->fetchAll();
+    ";
+    $result = $db->query($sql);
+    $orders = $result->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
     showError('Error al cargar los datos del servicio');
