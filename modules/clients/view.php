@@ -12,46 +12,77 @@ if (!isWorkshopActive()) {
     redirect('templates/dashboard.php');
 }
 
-$client = null;
-$vehicles = [];
-$orders = [];
-
 // Obtener el ID del cliente
-$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$id_client = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-if ($id <= 0) {
-    showError('Cliente no válido');
+if (!$id_client) {
+    showError('ID de cliente no válido');
     redirect('index.php');
 }
 
+error_log("Iniciando visualización de cliente ID: " . $id_client);
+
 try {
-    // Obtener datos del cliente
-    $stmt = $db->prepare("SELECT * FROM clients WHERE id_client = ? AND id_workshop = ?");
-    $stmt->execute([$id, getCurrentWorkshop()]);
-    $client = $stmt->fetch();
+    // Obtener información del cliente
+    error_log("Preparando consulta para obtener datos del cliente");
+    $sql = "SELECT c.*, 
+            GROUP_CONCAT(DISTINCT v.id_vehicle) as vehicle_ids,
+            GROUP_CONCAT(DISTINCT v.brand) as vehicle_brands,
+            GROUP_CONCAT(DISTINCT v.model) as vehicle_models,
+            GROUP_CONCAT(DISTINCT v.year) as vehicle_years,
+            GROUP_CONCAT(DISTINCT v.plates) as vehicle_plates
+            FROM clients c
+            LEFT JOIN vehicles v ON c.id_client = v.id_client
+            WHERE c.id_client = ? AND c.id_workshop = ?
+            GROUP BY c.id_client";
+    
+    error_log("SQL: " . $sql);
+    error_log("Parámetros: " . print_r([$id_client, getCurrentWorkshop()], true));
+    
+    $stmt = $db->query($sql, [$id_client, getCurrentWorkshop()]);
+    $client = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$client) {
+        error_log("Cliente no encontrado");
         showError('Cliente no encontrado');
         redirect('index.php');
     }
 
-    // Obtener vehículos del cliente
-    $stmt = $db->prepare("SELECT * FROM vehicles WHERE id_client = ? AND id_workshop = ? ORDER BY created_at DESC");
-    $stmt->execute([$id, getCurrentWorkshop()]);
-    $vehicles = $stmt->fetchAll();
+    error_log("Cliente encontrado: " . print_r($client, true));
 
-    // Obtener órdenes de servicio recientes
-    $stmt = $db->prepare("SELECT so.*, v.brand, v.model, v.plates 
-                         FROM service_orders so
-                         JOIN vehicles v ON so.id_vehicle = v.id_vehicle
-                         WHERE so.id_client = ? AND so.id_workshop = ?
-                         ORDER BY so.created_at DESC
-                         LIMIT 5");
-    $stmt->execute([$id, getCurrentWorkshop()]);
-    $orders = $stmt->fetchAll();
+    // Obtener vehículos del cliente
+    error_log("Obteniendo vehículos del cliente");
+    $vehicles_sql = "SELECT * FROM vehicles 
+                    WHERE id_client = ? AND id_workshop = ? 
+                    ORDER BY created_at DESC";
+    
+    error_log("SQL vehículos: " . $vehicles_sql);
+    $vehicles_stmt = $db->query($vehicles_sql, [$id_client, getCurrentWorkshop()]);
+    $vehicles = $vehicles_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    error_log("Vehículos encontrados: " . print_r($vehicles, true));
+
+    // Obtener órdenes de servicio del cliente
+    error_log("Obteniendo órdenes de servicio del cliente");
+    $orders_sql = "SELECT o.*, v.brand, v.model, v.plates 
+                  FROM service_orders o
+                  JOIN vehicles v ON o.id_vehicle = v.id_vehicle
+                  WHERE o.id_client = ? AND o.id_workshop = ?
+                  ORDER BY o.created_at DESC";
+    
+    error_log("SQL órdenes: " . $orders_sql);
+    $orders_stmt = $db->query($orders_sql, [$id_client, getCurrentWorkshop()]);
+    $orders = $orders_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    error_log("Órdenes encontradas: " . print_r($orders, true));
 
 } catch (PDOException $e) {
-    showError('Error al cargar los datos del cliente');
+    error_log("Error PDO: " . $e->getMessage());
+    showError('Error al obtener la información del cliente');
+    redirect('index.php');
+} catch (Exception $e) {
+    error_log("Error general: " . $e->getMessage());
+    showError('Error al procesar la solicitud');
     redirect('index.php');
 }
 
@@ -63,7 +94,7 @@ include '../../includes/header.php';
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Detalles del Cliente</h1>
         <div>
-            <a href="edit.php?id=<?php echo $id; ?>" class="btn btn-primary">
+            <a href="edit.php?id=<?php echo $id_client; ?>" class="btn btn-primary">
                 <i class="fas fa-edit"></i> Editar
             </a>
             <a href="index.php" class="btn btn-outline-secondary">
@@ -108,7 +139,7 @@ include '../../includes/header.php';
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Vehículos</h5>
-                    <a href="../vehicles/create.php?client_id=<?php echo $id; ?>" class="btn btn-sm btn-primary">
+                    <a href="../vehicles/create.php?client_id=<?php echo $id_client; ?>" class="btn btn-sm btn-primary">
                         <i class="fas fa-plus"></i> Nuevo Vehículo
                     </a>
                 </div>
