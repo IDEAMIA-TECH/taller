@@ -71,9 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Si no hay errores, guardar el cliente
     if (empty($errors)) {
         try {
+            error_log("Iniciando proceso de guardado de cliente");
+            error_log("Datos recibidos: " . print_r($_POST, true));
+            
             // Verificar si la tabla necesita ser actualizada
+            error_log("Verificando estructura de la tabla clients");
             $checkTable = $db->query("SHOW COLUMNS FROM clients LIKE 'street'");
             if ($checkTable->rowCount() == 0) {
+                error_log("Actualizando estructura de la tabla clients");
                 // Actualizar la tabla para incluir los nuevos campos
                 $db->query("ALTER TABLE clients 
                     ADD COLUMN street VARCHAR(255) NOT NULL AFTER rfc,
@@ -87,32 +92,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     DROP COLUMN address");
             }
 
-            // Usar query directamente con valores escapados usando PDO::quote()
-            $query = "INSERT INTO clients (id_workshop, name, phone, email, rfc, 
-                    street, number, number_int, neighborhood, city, state, zip_code, reference) 
-                    VALUES (
-                        " . getCurrentWorkshop() . ",
-                        " . $db->quote($name) . ",
-                        " . $db->quote($phone) . ",
-                        " . $db->quote($email) . ",
-                        " . $db->quote($rfc) . ",
-                        " . $db->quote($street) . ",
-                        " . $db->quote($number) . ",
-                        " . $db->quote($number_int) . ",
-                        " . $db->quote($neighborhood) . ",
-                        " . $db->quote($city) . ",
-                        " . $db->quote($state) . ",
-                        " . $db->quote($zip_code) . ",
-                        " . $db->quote($reference) . "
-                    )";
+            error_log("Preparando consulta de inserción");
+            // Preparar la consulta con placeholders
+            $sql = "INSERT INTO clients (
+                id_workshop, name, phone, email, rfc, 
+                street, number, number_int, neighborhood, 
+                city, state, zip_code, reference
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
-            $db->query($query);
+            error_log("SQL: " . $sql);
+            error_log("Valores: " . print_r([
+                getCurrentWorkshop(),
+                $name,
+                $phone,
+                $email,
+                $rfc,
+                $street,
+                $number,
+                $number_int,
+                $neighborhood,
+                $city,
+                $state,
+                $zip_code,
+                $reference
+            ], true));
 
+            // Ejecutar la consulta
+            $stmt = $db->query($sql, [
+                getCurrentWorkshop(),
+                $name,
+                $phone,
+                $email,
+                $rfc,
+                $street,
+                $number,
+                $number_int,
+                $neighborhood,
+                $city,
+                $state,
+                $zip_code,
+                $reference
+            ]);
+
+            error_log("Cliente guardado exitosamente");
             $success = true;
             showSuccess('Cliente agregado correctamente');
             redirect('index.php');
 
         } catch (PDOException $e) {
+            error_log("Error PDO al guardar cliente: " . $e->getMessage());
+            $errors[] = 'Error al guardar el cliente. Por favor, intente más tarde.';
+        } catch (Exception $e) {
+            error_log("Error general al guardar cliente: " . $e->getMessage());
             $errors[] = 'Error al guardar el cliente. Por favor, intente más tarde.';
         }
     }
