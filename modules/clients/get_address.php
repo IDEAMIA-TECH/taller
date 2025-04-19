@@ -1,31 +1,44 @@
 <?php
 require_once '../../includes/config.php';
 
+// Habilitar reporte de errores
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 header('Content-Type: application/json');
 
 // Inicializar logs
 $logs = [];
 $logs[] = "Iniciando proceso de consulta de código postal";
 
-// Verificar que se recibió el código postal
-if (!isset($_GET['zip_code']) || !preg_match('/^[0-9]{5}$/', $_GET['zip_code'])) {
-    $logs[] = "Código postal inválido o no proporcionado";
-    echo json_encode(['success' => false, 'message' => 'Código postal inválido', 'logs' => $logs]);
-    exit;
-}
-
-$zip_code = $_GET['zip_code'];
-$logs[] = "Código postal recibido: " . $zip_code;
-
 try {
+    // Verificar que se recibió el código postal
+    if (!isset($_GET['zip_code']) || !preg_match('/^[0-9]{5}$/', $_GET['zip_code'])) {
+        $logs[] = "Código postal inválido o no proporcionado";
+        echo json_encode(['success' => false, 'message' => 'Código postal inválido', 'logs' => $logs]);
+        exit;
+    }
+
+    $zip_code = $_GET['zip_code'];
+    $logs[] = "Código postal recibido: " . $zip_code;
+
+    // Verificar conexión a la base de datos
+    $logs[] = "Verificando conexión a la base de datos";
+    $db->query("SELECT 1");
+    $logs[] = "Conexión a la base de datos exitosa";
+
     // Verificar si las tablas existen
+    $logs[] = "Verificando existencia de tablas";
     $checkTables = $db->query("SHOW TABLES LIKE 'zip_codes'");
     if ($checkTables->rowCount() == 0) {
+        $logs[] = "Tablas no encontradas, creando estructura";
+        
         // Crear tablas si no existen
         $db->query("CREATE TABLE IF NOT EXISTS states (
             id_state INT PRIMARY KEY AUTO_INCREMENT,
             name VARCHAR(100) NOT NULL
         )");
+        $logs[] = "Tabla states creada";
         
         $db->query("CREATE TABLE IF NOT EXISTS cities (
             id_city INT PRIMARY KEY AUTO_INCREMENT,
@@ -33,11 +46,13 @@ try {
             name VARCHAR(100) NOT NULL,
             FOREIGN KEY (id_state) REFERENCES states(id_state)
         )");
+        $logs[] = "Tabla cities creada";
         
         $db->query("CREATE TABLE IF NOT EXISTS neighborhoods (
             id_neighborhood INT PRIMARY KEY AUTO_INCREMENT,
             name VARCHAR(100) NOT NULL
         )");
+        $logs[] = "Tabla neighborhoods creada";
         
         $db->query("CREATE TABLE IF NOT EXISTS zip_codes (
             id_zip_code INT PRIMARY KEY AUTO_INCREMENT,
@@ -49,13 +64,17 @@ try {
             FOREIGN KEY (id_city) REFERENCES cities(id_city),
             FOREIGN KEY (id_neighborhood) REFERENCES neighborhoods(id_neighborhood)
         )");
+        $logs[] = "Tabla zip_codes creada";
         
         // Insertar datos de ejemplo para Querétaro
+        $logs[] = "Insertando datos de ejemplo";
         $db->query("INSERT INTO states (name) VALUES ('Querétaro')");
         $stateId = $db->lastInsertId();
+        $logs[] = "Estado insertado con ID: " . $stateId;
         
         $db->query("INSERT INTO cities (id_state, name) VALUES ($stateId, 'Querétaro')");
         $cityId = $db->lastInsertId();
+        $logs[] = "Ciudad insertada con ID: " . $cityId;
         
         // Insertar algunas colonias de ejemplo
         $neighborhoods = [
@@ -69,13 +88,16 @@ try {
         foreach ($neighborhoods as $neighborhood) {
             $db->query("INSERT INTO neighborhoods (name) VALUES ('$neighborhood')");
             $neighborhoodId = $db->lastInsertId();
+            $logs[] = "Colonia insertada: " . $neighborhood . " con ID: " . $neighborhoodId;
             
             $db->query("INSERT INTO zip_codes (zip_code, id_state, id_city, id_neighborhood) 
                         VALUES ('76246', $stateId, $cityId, $neighborhoodId)");
+            $logs[] = "Código postal insertado para colonia: " . $neighborhood;
         }
     }
     
     // Consultar la información del código postal
+    $logs[] = "Consultando información del código postal";
     $stmt = $db->prepare("
         SELECT DISTINCT 
             s.name as state,
@@ -109,8 +131,12 @@ try {
         $logs[] = "No se encontraron datos para el código postal";
         echo json_encode(['success' => false, 'message' => 'No se encontró información para este código postal', 'logs' => $logs]);
     }
+} catch (PDOException $e) {
+    $logs[] = "Error de PDO: " . $e->getMessage();
+    error_log("Error de PDO: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error de base de datos', 'logs' => $logs]);
 } catch (Exception $e) {
-    $logs[] = "Excepción capturada: " . $e->getMessage();
-    error_log("Error al consultar código postal: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error al consultar la información', 'logs' => $logs]);
+    $logs[] = "Error general: " . $e->getMessage();
+    error_log("Error general: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error al procesar la solicitud', 'logs' => $logs]);
 } 
