@@ -10,6 +10,8 @@ $logs[] = "Configuración de base de datos:";
 $logs[] = "- DB_HOST: " . DB_HOST;
 $logs[] = "- DB_NAME: " . DB_NAME;
 $logs[] = "- DB_USER: " . DB_USER;
+$logs[] = "Estado de la sesión: " . (isset($_SESSION) ? "Iniciada" : "No iniciada");
+$logs[] = "Usuario autenticado: " . (isAuthenticated() ? "Sí" : "No");
 
 // Si el usuario ya está autenticado, redirigir al dashboard
 if (isAuthenticated()) {
@@ -22,6 +24,7 @@ $error = '';
 // Procesar formulario de login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $logs[] = "Método POST detectado";
+    $logs[] = "Datos POST recibidos: " . print_r($_POST, true);
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -201,7 +204,7 @@ echo "<script>console.log('Logs de login:', " . json_encode($logs) . ");</script
                         <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                     <?php endif; ?>
 
-                    <form method="POST" action="" id="loginForm">
+                    <form method="POST" action="<?php echo APP_URL; ?>/login" id="loginForm">
                         <div class="mb-3">
                             <label for="username" class="form-label">Usuario</label>
                             <div class="input-group">
