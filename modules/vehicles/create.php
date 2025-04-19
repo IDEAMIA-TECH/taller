@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             data.forEach(brand => {
                 const option = document.createElement('option');
-                option.value = brand.Make_ID;
+                option.value = brand.Make_Name;
                 option.textContent = brand.Make_Name;
                 brandSelect.appendChild(option);
             });
