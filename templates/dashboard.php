@@ -94,22 +94,23 @@ $logs[] = "Header incluido correctamente";
 ?>
 
 <style>
+/* Estilos para el sidebar */
 .sidebar {
     position: fixed;
-    top: 0;
+    top: 56px; /* Altura del navbar */
     bottom: 0;
     left: 0;
     z-index: 100;
-    padding: 48px 0 0;
+    padding: 20px 0;
     box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
     background-color: #343a40;
-    width: 240px;
+    width: 250px;
 }
 
 .sidebar-sticky {
     position: relative;
     top: 0;
-    height: calc(100vh - 48px);
+    height: calc(100vh - 56px);
     padding-top: .5rem;
     overflow-x: hidden;
     overflow-y: auto;
@@ -119,6 +120,8 @@ $logs[] = "Header incluido correctamente";
     font-weight: 500;
     color: #adb5bd;
     padding: .75rem 1rem;
+    display: flex;
+    align-items: center;
 }
 
 .sidebar .nav-link:hover {
@@ -133,11 +136,14 @@ $logs[] = "Header incluido correctamente";
 
 .sidebar .nav-link i {
     margin-right: .5rem;
+    width: 20px;
+    text-align: center;
 }
 
 .main-content {
-    margin-left: 240px;
+    margin-left: 250px;
     padding: 20px;
+    min-height: calc(100vh - 56px);
 }
 
 @media (max-width: 767.98px) {
@@ -166,8 +172,8 @@ $logs[] = "Header incluido correctamente";
                     </li>
                     <?php 
                     $logs[] = "Verificando roles para mostrar menú";
-                    if (hasRole('admin') || hasRole('receptionist')): 
-                        $logs[] = "Mostrando opciones para admin/recepcionista";
+                    if (hasRole('admin') || hasRole('receptionist') || hasRole('super_admin')): 
+                        $logs[] = "Mostrando opciones para admin/recepcionista/super_admin";
                     ?>
                     <li class="nav-item">
                         <a class="nav-link" href="<?php echo APP_URL; ?>/modules/clients/">
@@ -191,8 +197,8 @@ $logs[] = "Header incluido correctamente";
                     </li>
                     <?php 
                     endif; 
-                    if (hasRole('admin')): 
-                        $logs[] = "Mostrando opciones solo para admin";
+                    if (hasRole('admin') || hasRole('super_admin')): 
+                        $logs[] = "Mostrando opciones para admin/super_admin";
                     ?>
                     <li class="nav-item">
                         <a class="nav-link" href="<?php echo APP_URL; ?>/modules/reports/">
