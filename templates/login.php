@@ -116,8 +116,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Guardar logs en un archivo
-$logFile = __DIR__ . '/../logs/login_' . date('Y-m-d') . '.log';
-file_put_contents($logFile, implode("\n", $logs) . "\n\n", FILE_APPEND);
+$logDir = __DIR__ . '/../logs';
+if (!file_exists($logDir)) {
+    if (!mkdir($logDir, 0755, true)) {
+        $logs[] = "Error: No se pudo crear el directorio de logs";
+    }
+}
+
+$logFile = $logDir . '/login_' . date('Y-m-d') . '.log';
+if (is_writable($logDir)) {
+    if (!file_put_contents($logFile, implode("\n", $logs) . "\n\n", FILE_APPEND)) {
+        $logs[] = "Error: No se pudo escribir en el archivo de log";
+    }
+} else {
+    $logs[] = "Error: El directorio de logs no tiene permisos de escritura";
+}
+
+// Mostrar logs en la consola del navegador
+echo "<script>console.log('Logs de login:', " . json_encode($logs) . ");</script>";
 ?>
 
 <!DOCTYPE html>
