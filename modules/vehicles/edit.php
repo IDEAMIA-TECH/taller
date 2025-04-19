@@ -273,14 +273,18 @@ include '../../includes/header.php';
                             <div class="col-md-6">
                                 <label for="brand" class="form-label">Marca *</label>
                                 <select class="form-select" id="brand" name="brand" required>
-                                    <option value="">Seleccione una marca</option>
+                                    <option value="<?php echo htmlspecialchars($vehicle['brand']); ?>" selected>
+                                        <?php echo htmlspecialchars($vehicle['brand']); ?>
+                                    </option>
                                 </select>
                             </div>
 
                             <div class="col-md-6">
                                 <label for="model" class="form-label">Modelo *</label>
-                                <select class="form-select" id="model" name="model" required disabled>
-                                    <option value="">Seleccione un modelo</option>
+                                <select class="form-select" id="model" name="model" required>
+                                    <option value="<?php echo htmlspecialchars($vehicle['model']); ?>" selected>
+                                        <?php echo htmlspecialchars($vehicle['model']); ?>
+                                    </option>
                                 </select>
                             </div>
 
@@ -351,16 +355,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Ordenar las marcas alfabéticamente
             data.sort((a, b) => a.Make_Name.localeCompare(b.Make_Name));
             
+            // Agregar todas las marcas al select
             data.forEach(brand => {
-                const option = document.createElement('option');
-                option.value = brand.Make_Name;
-                option.textContent = brand.Make_Name;
-                if (brand.Make_Name === currentBrand) {
-                    option.selected = true;
-                    // Cargar modelos de la marca seleccionada
-                    loadModels(brand.Make_Name);
+                if (brand.Make_Name !== currentBrand) {
+                    const option = document.createElement('option');
+                    option.value = brand.Make_Name;
+                    option.textContent = brand.Make_Name;
+                    brandSelect.appendChild(option);
                 }
-                brandSelect.appendChild(option);
             });
         })
         .catch(error => {
@@ -371,9 +373,16 @@ document.addEventListener('DOMContentLoaded', function() {
     brandSelect.addEventListener('change', function() {
         const makeName = this.value;
         modelSelect.innerHTML = '<option value="">Seleccione un modelo</option>';
-        modelSelect.disabled = true;
         
-        if (makeName) {
+        if (makeName === currentBrand) {
+            // Si se selecciona la marca actual, mostrar el modelo actual
+            const option = document.createElement('option');
+            option.value = currentModel;
+            option.textContent = currentModel;
+            option.selected = true;
+            modelSelect.appendChild(option);
+        } else if (makeName) {
+            // Si se selecciona una nueva marca, cargar sus modelos
             loadModels(makeName);
         }
     });
@@ -393,12 +402,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const option = document.createElement('option');
                     option.value = model.Model_Name;
                     option.textContent = model.Model_Name;
-                    if (model.Model_Name === currentModel) {
-                        option.selected = true;
-                    }
                     modelSelect.appendChild(option);
                 });
-                modelSelect.disabled = false;
             })
             .catch(error => {
                 console.error('Error al cargar los modelos:', error);
