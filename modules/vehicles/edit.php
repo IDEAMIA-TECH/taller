@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $db->query($sql);
 
-            showSuccess('Vehículo actualizado correctamente');
+            showMessage('Vehículo actualizado correctamente', 'success');
             redirect('view.php?id=' . $id);
 
         } catch (PDOException $e) {
