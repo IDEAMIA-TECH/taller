@@ -22,11 +22,9 @@ if ($id <= 0) {
 
 try {
     // Obtener información del vehículo
-    $query = "SELECT v.*, c.name as client_name, c.phone as client_phone, c.email as client_email,
-                     b.name as brand_name
+    $query = "SELECT v.*, c.name as client_name, c.phone as client_phone, c.email as client_email
               FROM vehicles v 
               JOIN clients c ON v.id_client = c.id_client 
-              JOIN vehicle_brands b ON v.brand = b.id_brand 
               WHERE v.id_vehicle = '" . addslashes($id) . "' 
               AND v.id_workshop = '" . addslashes(getCurrentWorkshop()) . "'";
     
@@ -93,7 +91,7 @@ include '../../includes/header.php';
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Marca:</strong> <?php echo htmlspecialchars($vehicle['brand_name']); ?></p>
+                            <p><strong>Marca:</strong> <?php echo htmlspecialchars($vehicle['brand']); ?></p>
                             <p><strong>Modelo:</strong> <?php echo htmlspecialchars($vehicle['model']); ?></p>
                             <p><strong>Año:</strong> <?php echo $vehicle['year']; ?></p>
                             <p><strong>Color:</strong> <?php echo htmlspecialchars($vehicle['color']); ?></p>
