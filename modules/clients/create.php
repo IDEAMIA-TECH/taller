@@ -311,9 +311,14 @@ include '../../includes/header.php';
 
                             <div class="col-md-4">
                                 <label for="neighborhood" class="form-label">Colonia *</label>
-                                <select class="form-select" id="neighborhood" name="neighborhood" required>
-                                    <option value="">Seleccione una colonia</option>
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select" id="neighborhood" name="neighborhood" required>
+                                        <option value="">Seleccione una colonia</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary" id="addNeighborhoodBtn">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="col-md-4">
@@ -443,6 +448,55 @@ document.getElementById('zip_code').addEventListener('change', function() {
                 console.error('Error en la petición:', error);
                 alert('Error al obtener la información del código postal');
             });
+    }
+});
+
+// Función para agregar nueva colonia
+document.getElementById('addNeighborhoodBtn').addEventListener('click', function() {
+    const zipCode = document.getElementById('zip_code').value.trim();
+    if (!zipCode) {
+        alert('Por favor, ingrese primero el código postal');
+        return;
+    }
+
+    const newNeighborhood = prompt('Ingrese el nombre de la nueva colonia:');
+    if (newNeighborhood) {
+        // Hacer la llamada AJAX para guardar la nueva colonia
+        fetch('../../modules/clients/save_neighborhood.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `zip_code=${zipCode}&neighborhood=${encodeURIComponent(newNeighborhood)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Agregar la nueva colonia al select
+                const neighborhoodSelect = document.getElementById('neighborhood');
+                const option = document.createElement('option');
+                option.value = newNeighborhood;
+                option.textContent = newNeighborhood;
+                option.selected = true;
+                neighborhoodSelect.appendChild(option);
+                
+                // Actualizar el campo de ciudad y estado si no están llenos
+                if (!document.getElementById('city').value) {
+                    document.getElementById('city').value = data.city;
+                }
+                if (!document.getElementById('state').value) {
+                    document.getElementById('state').value = data.state;
+                }
+                
+                alert('Colonia agregada exitosamente');
+            } else {
+                alert('Error al agregar la colonia: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al agregar la colonia');
+        });
     }
 });
 </script>
