@@ -60,55 +60,10 @@ try {
 
     error_log("Códigos postales encontrados: " . print_r($zip_codes, true));
 
-    // Verificar si existe la tabla de relación neighborhoods_zip_codes
-    $check_relation_table = "SHOW TABLES LIKE 'neighborhoods_zip_codes'";
-    $relation_table_exists = $db->query($check_relation_table)->rowCount() > 0;
-
-    if (!$relation_table_exists) {
-        error_log("Creando tabla de relación neighborhoods_zip_codes");
-        $create_relation_table = "CREATE TABLE neighborhoods_zip_codes (
-            id_neighborhood INT NOT NULL,
-            id_zip_code INT NOT NULL,
-            PRIMARY KEY (id_neighborhood, id_zip_code),
-            FOREIGN KEY (id_neighborhood) REFERENCES neighborhoods(id_neighborhood),
-            FOREIGN KEY (id_zip_code) REFERENCES zip_codes(id_zip_code)
-        )";
-        $db->query($create_relation_table);
-
-        // Migrar datos existentes
-        error_log("Migrando datos existentes a neighborhoods_zip_codes");
-        
-        // Obtener todos los códigos postales
-        $zip_codes_sql = "SELECT id_zip_code, zip_code FROM zip_codes";
-        $zip_codes_data = $db->query($zip_codes_sql)->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Obtener todas las colonias
-        $neighborhoods_sql = "SELECT id_neighborhood, name FROM neighborhoods";
-        $neighborhoods_data = $db->query($neighborhoods_sql)->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Insertar relaciones
-        foreach ($neighborhoods_data as $neighborhood) {
-            foreach ($zip_codes_data as $zip_code) {
-                // Verificar si la colonia ya está relacionada con este código postal
-                $check_sql = "SELECT COUNT(*) FROM neighborhoods_zip_codes 
-                            WHERE id_neighborhood = ? AND id_zip_code = ?";
-                $exists = $db->query($check_sql, [$neighborhood['id_neighborhood'], $zip_code['id_zip_code']])->fetchColumn();
-                
-                if (!$exists) {
-                    $insert_sql = "INSERT INTO neighborhoods_zip_codes (id_neighborhood, id_zip_code) 
-                                 VALUES (?, ?)";
-                    $db->query($insert_sql, [$neighborhood['id_neighborhood'], $zip_code['id_zip_code']]);
-                }
-            }
-        }
-        error_log("Migración de datos completada");
-    }
-
     // Obtener colonias para el código postal del cliente
     error_log("Obteniendo colonias para el código postal del cliente");
     $neighborhood_sql = "SELECT n.* FROM neighborhoods n 
-                        JOIN neighborhoods_zip_codes nz ON n.id_neighborhood = nz.id_neighborhood
-                        JOIN zip_codes z ON nz.id_zip_code = z.id_zip_code 
+                        JOIN zip_codes z ON n.id_neighborhood = z.id_neighborhood 
                         WHERE z.zip_code = ?";
     error_log("SQL colonias: " . $neighborhood_sql);
     error_log("Parámetros: " . print_r([$client['zip_code']], true));
